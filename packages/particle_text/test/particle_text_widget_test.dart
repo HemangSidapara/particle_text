@@ -135,7 +135,7 @@ void main() {
 
     testWidgets('works with non-expanding mode', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -143,7 +143,7 @@ void main() {
                 height: 200,
                 child: ParticleText(
                   text: 'Small',
-                  config: const ParticleConfig(particleCount: 50),
+                  config: ParticleConfig(particleCount: 50),
                   expand: false,
                 ),
               ),

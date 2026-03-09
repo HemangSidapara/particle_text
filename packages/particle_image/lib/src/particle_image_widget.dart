@@ -124,7 +124,9 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
     // Force re-init now that image is available
     _initialized = false;
     if (_lastSize != Size.zero) {
-      _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
+      if (mounted) {
+        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
+      }
     } else {
       // Size not known yet — setState to trigger build → LayoutBuilder → _initSystem
       if (mounted) setState(() {});
