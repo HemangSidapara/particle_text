@@ -5,4 +5,5 @@
 library;
 
 export 'package:particle_core/particle_core.dart';
+
 export 'src/particle_text_widget.dart';

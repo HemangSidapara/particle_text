@@ -8,8 +8,8 @@ import 'particle_config.dart';
 /// Renders ALL particles in a **single GPU draw call** using
 /// [Canvas.drawRawAtlas] with a pre-rendered sprite texture.
 ///
-/// This is orders of magnitude faster than calling drawCircle
-/// per particle, as the GPU batches everything into one texture draw.
+/// Supports transparent, light, and dark backgrounds via
+/// [ParticleConfig.drawBackground].
 class ParticlePainter extends CustomPainter {
   final ParticleSystem system;
   final ParticleConfig config;
@@ -22,17 +22,19 @@ class ParticlePainter extends CustomPainter {
   ParticlePainter({
     required this.system,
     required this.config,
-  }) : _bgPaint = Paint()..color = config.backgroundColor,
-       _atlasPaint = Paint()..blendMode = BlendMode.plus,
-       super(repaint: system);
+  })  : _bgPaint = Paint()..color = config.backgroundColor,
+        _atlasPaint = Paint(), // default srcOver — works on any background
+        super(repaint: system);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      _bgPaint,
-    );
+    // Background (optional — set drawBackground: false for transparent)
+    if (config.drawBackground) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        _bgPaint,
+      );
+    }
 
     // Draw ALL particles in one call
     final sprite = system.sprite;
@@ -40,15 +42,19 @@ class ParticlePainter extends CustomPainter {
     final rects = system.srcRects;
     final colors = system.atlasColors;
 
-    if (sprite != null && transforms != null && rects != null && colors != null && transforms.isNotEmpty) {
+    if (sprite != null &&
+        transforms != null &&
+        rects != null &&
+        colors != null &&
+        transforms.isNotEmpty) {
       canvas.drawRawAtlas(
         sprite,
         transforms,
         rects,
         colors,
         BlendMode.modulate, // tint white sprite with per-particle color
-        null, // no cull rect
-        _atlasPaint, // additive blending for glow effect
+        null,
+        _atlasPaint,
       );
     }
 

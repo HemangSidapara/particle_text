@@ -204,9 +204,8 @@ class ParticleSystem extends ChangeNotifier {
     // In image mode: one particle per sampled pixel for full coverage,
     // capped at maxParticleCount for performance.
     // In text mode: use density-based count (samples repeat via modulo).
-    final count = usePerParticleColor
-        ? min(samples.length, config.maxParticleCount)
-        : config.effectiveParticleCount(size);
+    final count =
+        usePerParticleColor ? min(samples.length, config.maxParticleCount) : config.effectiveParticleCount(size);
     final maxDist = max(size.width, size.height);
     final sizeRange = config.maxParticleSize - config.minParticleSize;
     final alphaRange = config.maxAlpha - config.minAlpha;
@@ -217,17 +216,15 @@ class ParticleSystem extends ChangeNotifier {
       final s = samples[i % samples.length];
       final angle = _rng.nextDouble() * pi * 2;
       final dist = _rng.nextDouble() * maxDist;
-      particles.add(
-        Particle(
-          x: cx + cos(angle) * dist,
-          y: cy + sin(angle) * dist,
-          tx: s.x,
-          ty: s.y,
-          size: _rng.nextDouble() * sizeRange + config.minParticleSize,
-          alpha: _rng.nextDouble() * alphaRange + config.minAlpha,
-          targetColor: s.color,
-        ),
-      );
+      particles.add(Particle(
+        x: cx + cos(angle) * dist,
+        y: cy + sin(angle) * dist,
+        tx: s.x,
+        ty: s.y,
+        size: _rng.nextDouble() * sizeRange + config.minParticleSize,
+        alpha: _rng.nextDouble() * alphaRange + config.minAlpha,
+        targetColor: s.color,
+      ));
     }
   }
 
@@ -282,10 +279,8 @@ class ParticleSystem extends ChangeNotifier {
     final physH = (size.height * dpr).toInt();
     if (physW == 0 || physH == 0) return [];
 
-    final logicalFontSize = min(
-      size.width / (text.length * 0.6),
-      size.height * 0.32,
-    );
+    // Use user-provided fontSize, or default to 60
+    final logicalFontSize = config.fontSize ?? 60.0;
 
     final textPainter = TextPainter(
       text: TextSpan(
@@ -298,8 +293,14 @@ class ParticleSystem extends ChangeNotifier {
         ),
       ),
       textDirection: TextDirection.ltr,
+      textAlign: config.textAlign,
     );
-    textPainter.layout();
+
+    // Layout with max width — enables multi-line wrapping
+    textPainter.layout(maxWidth: physW.toDouble());
+
+    final textW = textPainter.width;
+    final textH = textPainter.height;
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(
@@ -307,8 +308,9 @@ class ParticleSystem extends ChangeNotifier {
       Rect.fromLTWH(0, 0, physW.toDouble(), physH.toDouble()),
     );
 
-    final offsetX = (physW - textPainter.width) / 2;
-    final offsetY = (physH - textPainter.height) / 2;
+    // Center the text block
+    final offsetX = (physW - textW) / 2;
+    final offsetY = (physH - textH) / 2;
     textPainter.paint(canvas, Offset(offsetX, offsetY));
 
     final picture = recorder.endRecording();

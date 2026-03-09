@@ -65,7 +65,11 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
   void didUpdateWidget(covariant ParticleText oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.config != widget.config) {
+    final configChanged = oldWidget.config != widget.config;
+    final textChanged = oldWidget.text != widget.text;
+
+    if (configChanged) {
+      // Config changed — rebuild the entire system
       _system.dispose();
       _system = ParticleSystem(config: widget.config);
       _painter = ParticlePainter(system: _system, config: widget.config);
@@ -73,9 +77,8 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
       if (_lastSize != Size.zero) {
         _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
       }
-    }
-
-    if (oldWidget.text != widget.text && _lastSize != Size.zero) {
+    } else if (textChanged && _lastSize != Size.zero) {
+      // Only text changed — retarget existing particles (smooth morph)
       _system.setText(widget.text, _lastSize);
       widget.onTextChanged?.call();
     }

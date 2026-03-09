@@ -4,6 +4,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:particle_core/particle_core.dart';
 
+
+
 /// Renders an image as interactive particles.
 ///
 /// Each particle takes the color of its source pixel, creating
@@ -66,7 +68,8 @@ class ParticleImage extends StatefulWidget {
   State<ParticleImage> createState() => _ParticleImageState();
 }
 
-class _ParticleImageState extends State<ParticleImage> with SingleTickerProviderStateMixin {
+class _ParticleImageState extends State<ParticleImage>
+    with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   late ParticleSystem _system;
   late ParticlePainter _painter;
@@ -90,7 +93,9 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
   void didUpdateWidget(covariant ParticleImage oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.config != widget.config) {
+    final configChanged = oldWidget.config != widget.config;
+
+    if (configChanged) {
       _system.dispose();
       _system = ParticleSystem(config: widget.config);
       _painter = ParticlePainter(system: _system, config: widget.config);
@@ -98,10 +103,10 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
       if (_lastSize != Size.zero) {
         _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
       }
+      return;
     }
 
     if (oldWidget.image != widget.image && widget.image != null) {
-      _loadedImage = null;
       _initialized = false;
       if (_lastSize != Size.zero) {
         _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
@@ -124,9 +129,7 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
     // Force re-init now that image is available
     _initialized = false;
     if (_lastSize != Size.zero) {
-      if (mounted) {
-        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
-      }
+      _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
     } else {
       // Size not known yet — setState to trigger build → LayoutBuilder → _initSystem
       if (mounted) setState(() {});
@@ -177,11 +180,14 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
           child: GestureDetector(
             onPanStart: (d) => _system.pointer = d.localPosition,
             onPanUpdate: (d) => _system.pointer = d.localPosition,
-            onPanEnd: (_) => _system.pointer = const Offset(-9999, -9999),
-            onPanCancel: () => _system.pointer = const Offset(-9999, -9999),
+            onPanEnd: (_) =>
+                _system.pointer = const Offset(-9999, -9999),
+            onPanCancel: () =>
+                _system.pointer = const Offset(-9999, -9999),
             child: MouseRegion(
               onHover: (e) => _system.pointer = e.localPosition,
-              onExit: (_) => _system.pointer = const Offset(-9999, -9999),
+              onExit: (_) =>
+                  _system.pointer = const Offset(-9999, -9999),
               cursor: SystemMouseCursors.none,
               child: CustomPaint(
                 size: size,

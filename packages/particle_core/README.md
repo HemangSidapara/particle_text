@@ -33,29 +33,30 @@ dependencies:
 
 ## ParticleConfig options
 
-| Parameter          | Type         | Default   | Description                                         |
-|--------------------|--------------|-----------|-----------------------------------------------------|
-| `particleDensity`  | `double`     | `2000`    | Particles per 100k px² of screen area (auto-scales) |
-| `particleCount`    | `int?`       | `null`    | Fixed count — overrides density when set            |
-| `maxParticleCount` | `int`        | `50000`   | Upper cap for density scaling                       |
-| `minParticleCount` | `int`        | `1000`    | Lower floor for density scaling                     |
-| `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)               |
-| `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                      |
-| `friction`         | `double`     | `0.88`    | Velocity damping (0.8–0.95)                         |
-| `repelForce`       | `double`     | `8.0`     | Pointer repulsion strength (1.0–20.0)               |
-| `backgroundColor`  | `Color`      | `#020308` | Canvas background                                   |
-| `particleColor`    | `Color`      | `#8CAADE` | Particle color at rest                              |
-| `displacedColor`   | `Color`      | `#DCE5FF` | Particle color when scattered                       |
-| `pointerGlowColor` | `Color`      | `#C8D2F0` | Glow orb color                                      |
-| `minParticleSize`  | `double`     | `0.4`     | Min particle radius                                 |
-| `maxParticleSize`  | `double`     | `2.2`     | Max particle radius                                 |
-| `minAlpha`         | `double`     | `0.5`     | Min particle opacity                                |
-| `maxAlpha`         | `double`     | `1.0`     | Max particle opacity                                |
-| `sampleGap`        | `int`        | `2`       | Pixel sampling density (lower = more targets)       |
-| `fontWeight`       | `FontWeight` | `bold`    | Text rendering weight                               |
-| `fontFamily`       | `String?`    | `null`    | Custom font family                                  |
-| `showPointerGlow`  | `bool`       | `true`    | Show pointer glow orb                               |
-| `pointerDotRadius` | `double`     | `4.0`     | Center dot radius                                   |
+| Parameter          | Type         | Default   | Description                                                        |
+|--------------------|--------------|-----------|--------------------------------------------------------------------|
+| `particleDensity`  | `double`     | `2000`    | Particles per 100k px² of screen area (auto-scales)                |
+| `particleCount`    | `int?`       | `null`    | Fixed count — overrides density when set                           |
+| `maxParticleCount` | `int`        | `50000`   | Upper cap for density scaling                                      |
+| `minParticleCount` | `int`        | `1000`    | Lower floor for density scaling                                    |
+| `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)                              |
+| `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                                     |
+| `friction`         | `double`     | `0.88`    | Velocity damping (0.8–0.95)                                        |
+| `repelForce`       | `double`     | `8.0`     | Pointer repulsion strength (1.0–20.0)                              |
+| `backgroundColor`  | `Color`      | `#020308` | Canvas background                                                  |
+| `particleColor`    | `Color`      | `#8CAADE` | Particle color at rest                                             |
+| `displacedColor`   | `Color`      | `#DCE5FF` | Particle color when scattered                                      |
+| `pointerGlowColor` | `Color`      | `#C8D2F0` | Glow orb color                                                     |
+| `minParticleSize`  | `double`     | `0.4`     | Min particle radius                                                |
+| `maxParticleSize`  | `double`     | `2.2`     | Max particle radius                                                |
+| `minAlpha`         | `double`     | `0.5`     | Min particle opacity                                               |
+| `maxAlpha`         | `double`     | `1.0`     | Max particle opacity                                               |
+| `sampleGap`        | `int`        | `2`       | Pixel sampling density (lower = more targets)                      |
+| `fontWeight`       | `FontWeight` | `bold`    | Text rendering weight                                              |
+| `fontFamily`       | `String?`    | `null`    | Custom font family                                                 |
+| `showPointerGlow`  | `bool`       | `true`    | Show pointer glow orb                                              |
+| `pointerDotRadius` | `double`     | `4.0`     | Center dot radius                                                  |
+| `drawBackground`   | `bool`       | `true`    | Whether to draw the `backgroundColor` or transparent/overlay usage |
 
 ### Built-in presets
 

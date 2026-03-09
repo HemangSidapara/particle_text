@@ -196,13 +196,17 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
   late TextEditingController _controller;
   int _presetIndex = 0;
 
+  double _fontSize = 160.0;
+
+  bool _isDark = true;
+
   final List<_Preset> _presets = [
-    _Preset('Default', const ParticleConfig()),
-    _Preset('Cosmic', ParticleConfig.cosmic()),
-    _Preset('Fire', ParticleConfig.fire()),
-    _Preset('Matrix', ParticleConfig.matrix()),
-    _Preset('Pastel', ParticleConfig.pastel()),
-    _Preset('Minimal', ParticleConfig.minimal()),
+    _Preset('Default', ParticleConfig(fontSize: 160.0)),
+    _Preset('Cosmic', ParticleConfig.cosmic(fontSize: 160.0)),
+    _Preset('Fire', ParticleConfig.fire(fontSize: 160.0)),
+    _Preset('Matrix', ParticleConfig.matrix(fontSize: 160.0)),
+    _Preset('Pastel', ParticleConfig.pastel(fontSize: 160.0)),
+    _Preset('Minimal', ParticleConfig.minimal(fontSize: 160.0)),
   ];
 
   @override
@@ -217,22 +221,41 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
     super.dispose();
   }
 
+  Color get themeColor => _isDark ? Colors.white : Colors.black;
+
   @override
   Widget build(BuildContext context) {
     final preset = _presets[_presetIndex];
 
+    final config = preset.config.copyWith(
+      drawBackground: _presetIndex == 0 ? _isDark : null,
+      backgroundColor: _presetIndex == 0
+          ? _isDark
+                ? const Color(0xFF020308)
+                : Colors.transparent
+          : null,
+      particleColor: _presetIndex == 0
+          ? _isDark
+                ? const Color(0xFF8CAADE)
+                : Color(0xFF020308)
+          : null,
+      fontSize: _fontSize,
+    );
     return Scaffold(
-      backgroundColor: preset.config.backgroundColor,
+      backgroundColor: _isDark ? preset.config.backgroundColor : Colors.white.withValues(alpha: 0.3),
       body: Stack(
         children: [
-          ParticleText(text: _text, config: preset.config),
+          ParticleText(
+            text: _text,
+            config: config,
+          ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             left: 8,
             child: IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.white.withValues(alpha: 0.3),
+                color: themeColor.withValues(alpha: 0.3),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -241,15 +264,42 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
             top: MediaQuery.of(context).padding.top + 12,
             left: 0,
             right: 0,
-            child: Center(
-              child: Text(
-                'TOUCH & DRAG TO INTERACT',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  fontSize: 11,
-                  letterSpacing: 3,
+            child: Row(
+              mainAxisAlignment: .spaceBetween,
+              children: [
+                SizedBox(width: 64),
+                Expanded(
+                  child: Text(
+                    'TOUCH & DRAG TO INTERACT',
+                    style: TextStyle(
+                      color: themeColor.withValues(alpha: _isDark ? 0.15 : 0.5),
+                      fontSize: 11,
+                      letterSpacing: 3,
+                    ),
+                  ),
                 ),
-              ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _isDark = !_isDark;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isDark ? const Color(0xFF8CAADE) : Color(0xFF020308),
+                  ),
+                  icon: Icon(
+                    _isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                    color: _isDark ? const Color(0xFF020308) : Color(0xFF8CAADE),
+                  ),
+                  label: Text(
+                    _isDark ? "Dark" : "Light",
+                    style: TextStyle(
+                      color: _isDark ? const Color(0xFF020308) : Color(0xFF8CAADE),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+              ],
             ),
           ),
           Positioned(
@@ -269,19 +319,24 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
                     itemBuilder: (context, index) {
                       final sel = index == _presetIndex;
                       return GestureDetector(
-                        onTap: () => setState(() => _presetIndex = index),
+                        onTap: () {
+                          setState(() {
+                            _presetIndex = index;
+                            _isDark = true;
+                          });
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(
+                            color: themeColor.withValues(
                               alpha: sel ? 0.12 : 0.04,
                             ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.white.withValues(
+                              color: themeColor.withValues(
                                 alpha: sel ? 0.25 : 0.08,
                               ),
                             ),
@@ -289,7 +344,7 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
                           child: Text(
                             _presets[index].name,
                             style: TextStyle(
-                              color: Colors.white.withValues(
+                              color: themeColor.withValues(
                                 alpha: sel ? 0.8 : 0.35,
                               ),
                               fontSize: 12,
@@ -302,6 +357,14 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _slider(
+                  'Font Size',
+                  _fontSize,
+                  60.0,
+                  512.0,
+                  (v) => setState(() => _fontSize = v),
+                ),
+                const SizedBox(height: 8),
                 _isEditing ? _buildEditor() : _buildChangeButton(),
               ],
             ),
@@ -315,16 +378,16 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
     return Container(
       width: 220,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: themeColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.15)),
       ),
       child: TextField(
         controller: _controller,
         autofocus: true,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.8),
+          color: themeColor.withValues(alpha: 0.8),
           fontSize: 14,
         ),
         decoration: const InputDecoration(
@@ -352,18 +415,73 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: themeColor.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: themeColor.withValues(alpha: 0.08)),
         ),
         child: Text(
           'change text',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.35),
+            color: themeColor.withValues(alpha: 0.35),
             fontSize: 13,
             letterSpacing: 1,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _slider(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: themeColor.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                activeTrackColor: themeColor.withValues(alpha: 0.3),
+                inactiveTrackColor: themeColor.withValues(alpha: 0.08),
+                thumbColor: themeColor.withValues(alpha: 0.7),
+                overlayColor: themeColor.withValues(alpha: 0.05),
+              ),
+              child: Slider(
+                value: value,
+                min: min,
+                max: max,
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 45,
+            child: Text(
+              value.toStringAsFixed(value < 1 ? 2 : 0),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: themeColor.withValues(alpha: 0.35),
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -575,6 +693,7 @@ class AutoMorphDemo extends StatefulWidget {
 }
 
 class _AutoMorphDemoState extends State<AutoMorphDemo> {
+  final _fontSize = 160.0;
   final _words = ['Flutter', 'Dart', 'Particle', 'Provider', 'BLoC', 'Riverpod', 'GetX', 'Kotlin', 'Swift'];
   int _index = 0;
   late Timer _timer;
@@ -602,7 +721,10 @@ class _AutoMorphDemoState extends State<AutoMorphDemo> {
       backgroundColor: const Color(0xFF05060F),
       body: Stack(
         children: [
-          ParticleText(text: _words[_index], config: ParticleConfig.cosmic()),
+          ParticleText(
+            text: _words[_index],
+            config: ParticleConfig.cosmic(fontSize: _fontSize),
+          ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             left: 8,
@@ -693,6 +815,7 @@ class CustomColorsDemo extends StatefulWidget {
 }
 
 class _CustomColorsDemoState extends State<CustomColorsDemo> {
+  final double _fontSize = 220.0;
   double _hue = 220;
   double _brightness = 0.02;
   double _repelForce = 8;
@@ -716,6 +839,7 @@ class _CustomColorsDemoState extends State<CustomColorsDemo> {
       backgroundColor: bg,
       repelForce: _repelForce,
       returnSpeed: _returnSpeed,
+      fontSize: _fontSize,
     );
   }
 

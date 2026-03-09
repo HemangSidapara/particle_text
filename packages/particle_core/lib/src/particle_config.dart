@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Configuration for the [ParticleText] widget.
+/// Configuration for particle widgets.
 ///
-/// Controls particle behavior, appearance, and physics.
+/// Controls particle behavior, appearance, physics, and text rendering.
 ///
 /// ### Responsive particle count
 ///
@@ -16,6 +16,19 @@ import 'package:flutter/material.dart';
 ///
 /// // Fixed count (manual override)
 /// ParticleConfig(particleCount: 6000)
+/// ```
+///
+/// ### Presets with overrides
+///
+/// ```dart
+/// // Use preset as-is
+/// ParticleConfig.cosmic()
+///
+/// // Override specific values
+/// ParticleConfig.cosmic(fontSize: 48, drawBackground: false)
+///
+/// // Or use copyWith on any config
+/// config.copyWith(particleColor: Colors.red, fontSize: 32)
 /// ```
 class ParticleConfig {
   /// Fixed particle count. When set, overrides [particleDensity].
@@ -93,6 +106,18 @@ class ParticleConfig {
   /// Optional font family for the text shape.
   final String? fontFamily;
 
+  /// Font size for text rendering in logical pixels.
+  /// When null, defaults to 60.0. Set this to control text size
+  /// and enable multi-line wrapping (text wraps when it exceeds widget width).
+  final double? fontSize;
+
+  /// Text alignment for multi-line text.
+  final TextAlign textAlign;
+
+  /// Whether to draw the [backgroundColor] as a solid rect behind particles.
+  /// Set to false for transparent/overlay usage on any background.
+  final bool drawBackground;
+
   /// Whether to show the pointer glow orb.
   final bool showPointerGlow;
 
@@ -119,6 +144,9 @@ class ParticleConfig {
     this.sampleGap = 2,
     this.fontWeight = FontWeight.bold,
     this.fontFamily,
+    this.fontSize,
+    this.textAlign = TextAlign.center,
+    this.drawBackground = true,
     this.showPointerGlow = true,
     this.pointerDotRadius = 4.0,
   });
@@ -135,67 +163,423 @@ class ParticleConfig {
     return count.clamp(minParticleCount, maxParticleCount);
   }
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ParticleConfig) return false;
+    return particleCount == other.particleCount &&
+        particleDensity == other.particleDensity &&
+        maxParticleCount == other.maxParticleCount &&
+        minParticleCount == other.minParticleCount &&
+        mouseRadius == other.mouseRadius &&
+        returnSpeed == other.returnSpeed &&
+        friction == other.friction &&
+        repelForce == other.repelForce &&
+        backgroundColor == other.backgroundColor &&
+        particleColor == other.particleColor &&
+        displacedColor == other.displacedColor &&
+        pointerGlowColor == other.pointerGlowColor &&
+        minParticleSize == other.minParticleSize &&
+        maxParticleSize == other.maxParticleSize &&
+        minAlpha == other.minAlpha &&
+        maxAlpha == other.maxAlpha &&
+        sampleGap == other.sampleGap &&
+        fontWeight == other.fontWeight &&
+        fontFamily == other.fontFamily &&
+        fontSize == other.fontSize &&
+        textAlign == other.textAlign &&
+        drawBackground == other.drawBackground &&
+        showPointerGlow == other.showPointerGlow &&
+        pointerDotRadius == other.pointerDotRadius;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      particleCount,
+      particleDensity,
+      maxParticleCount,
+      minParticleCount,
+      mouseRadius,
+      returnSpeed,
+      friction,
+      repelForce,
+      backgroundColor,
+      particleColor,
+      displacedColor,
+      pointerGlowColor,
+      minParticleSize,
+      maxParticleSize,
+      minAlpha,
+      maxAlpha,
+      Object.hash(
+        sampleGap,
+        fontWeight,
+        fontFamily,
+        fontSize,
+        textAlign,
+        drawBackground,
+        showPointerGlow,
+        pointerDotRadius,
+      ),
+    );
+  }
+
+  /// Creates a copy of this config with the given fields replaced.
+  ParticleConfig copyWith({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount ?? this.particleCount,
+      particleDensity: particleDensity ?? this.particleDensity,
+      maxParticleCount: maxParticleCount ?? this.maxParticleCount,
+      minParticleCount: minParticleCount ?? this.minParticleCount,
+      mouseRadius: mouseRadius ?? this.mouseRadius,
+      returnSpeed: returnSpeed ?? this.returnSpeed,
+      friction: friction ?? this.friction,
+      repelForce: repelForce ?? this.repelForce,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      particleColor: particleColor ?? this.particleColor,
+      displacedColor: displacedColor ?? this.displacedColor,
+      pointerGlowColor: pointerGlowColor ?? this.pointerGlowColor,
+      minParticleSize: minParticleSize ?? this.minParticleSize,
+      maxParticleSize: maxParticleSize ?? this.maxParticleSize,
+      minAlpha: minAlpha ?? this.minAlpha,
+      maxAlpha: maxAlpha ?? this.maxAlpha,
+      sampleGap: sampleGap ?? this.sampleGap,
+      fontWeight: fontWeight ?? this.fontWeight,
+      fontFamily: fontFamily ?? this.fontFamily,
+      fontSize: fontSize ?? this.fontSize,
+      textAlign: textAlign ?? this.textAlign,
+      drawBackground: drawBackground ?? this.drawBackground,
+      showPointerGlow: showPointerGlow ?? this.showPointerGlow,
+      pointerDotRadius: pointerDotRadius ?? this.pointerDotRadius,
+    );
+  }
+
+  // ── Presets ─────────────────────────────────────────────────────
+  // All presets accept optional overrides for any parameter.
+
   /// Preset: dense cosmic dust look.
-  factory ParticleConfig.cosmic() => const ParticleConfig(
-    particleDensity: 2800,
-    particleColor: Color(0xFF6E7FCC),
-    displacedColor: Color(0xFFA8C4FF),
-    pointerGlowColor: Color(0xFF8090E0),
-    backgroundColor: Color(0xFF05060F),
-    maxParticleSize: 1.8,
-    repelForce: 10.0,
-    friction: 0.86,
-  );
+  ///
+  /// ```dart
+  /// ParticleConfig.cosmic()
+  /// ParticleConfig.cosmic(fontSize: 48, drawBackground: false)
+  /// ```
+  factory ParticleConfig.cosmic({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount,
+      particleDensity: particleDensity ?? 2800,
+      maxParticleCount: maxParticleCount ?? 50000,
+      minParticleCount: minParticleCount ?? 1000,
+      mouseRadius: mouseRadius ?? 80.0,
+      returnSpeed: returnSpeed ?? 0.04,
+      friction: friction ?? 0.86,
+      repelForce: repelForce ?? 10.0,
+      backgroundColor: backgroundColor ?? const Color(0xFF05060F),
+      particleColor: particleColor ?? const Color(0xFF6E7FCC),
+      displacedColor: displacedColor ?? const Color(0xFFA8C4FF),
+      pointerGlowColor: pointerGlowColor ?? const Color(0xFF8090E0),
+      minParticleSize: minParticleSize ?? 0.4,
+      maxParticleSize: maxParticleSize ?? 1.8,
+      minAlpha: minAlpha ?? 0.5,
+      maxAlpha: maxAlpha ?? 1.0,
+      sampleGap: sampleGap ?? 2,
+      fontWeight: fontWeight ?? FontWeight.bold,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      textAlign: textAlign ?? TextAlign.center,
+      drawBackground: drawBackground ?? true,
+      showPointerGlow: showPointerGlow ?? true,
+      pointerDotRadius: pointerDotRadius ?? 4.0,
+    );
+  }
 
   /// Preset: fiery warm particles.
-  factory ParticleConfig.fire() => const ParticleConfig(
-    particleDensity: 2400,
-    particleColor: Color(0xFFCC6633),
-    displacedColor: Color(0xFFFFCC44),
-    pointerGlowColor: Color(0xFFFF8844),
-    backgroundColor: Color(0xFF0A0504),
-    maxParticleSize: 2.0,
-    repelForce: 12.0,
-    returnSpeed: 0.03,
-  );
+  ///
+  /// ```dart
+  /// ParticleConfig.fire()
+  /// ParticleConfig.fire(fontSize: 72, repelForce: 15.0)
+  /// ```
+  factory ParticleConfig.fire({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount,
+      particleDensity: particleDensity ?? 2400,
+      maxParticleCount: maxParticleCount ?? 50000,
+      minParticleCount: minParticleCount ?? 1000,
+      mouseRadius: mouseRadius ?? 80.0,
+      returnSpeed: returnSpeed ?? 0.03,
+      friction: friction ?? 0.88,
+      repelForce: repelForce ?? 12.0,
+      backgroundColor: backgroundColor ?? const Color(0xFF0A0504),
+      particleColor: particleColor ?? const Color(0xFFCC6633),
+      displacedColor: displacedColor ?? const Color(0xFFFFCC44),
+      pointerGlowColor: pointerGlowColor ?? const Color(0xFFFF8844),
+      minParticleSize: minParticleSize ?? 0.4,
+      maxParticleSize: maxParticleSize ?? 2.0,
+      minAlpha: minAlpha ?? 0.5,
+      maxAlpha: maxAlpha ?? 1.0,
+      sampleGap: sampleGap ?? 2,
+      fontWeight: fontWeight ?? FontWeight.bold,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      textAlign: textAlign ?? TextAlign.center,
+      drawBackground: drawBackground ?? true,
+      showPointerGlow: showPointerGlow ?? true,
+      pointerDotRadius: pointerDotRadius ?? 4.0,
+    );
+  }
 
   /// Preset: neon green matrix style.
-  factory ParticleConfig.matrix() => const ParticleConfig(
-    particleDensity: 2000,
-    particleColor: Color(0xFF00CC44),
-    displacedColor: Color(0xFF88FF88),
-    pointerGlowColor: Color(0xFF44FF66),
-    backgroundColor: Color(0xFF010A02),
-    maxParticleSize: 1.6,
-    repelForce: 6.0,
-    friction: 0.90,
-  );
+  ///
+  /// ```dart
+  /// ParticleConfig.matrix()
+  /// ParticleConfig.matrix(fontSize: 40, fontFamily: 'Courier')
+  /// ```
+  factory ParticleConfig.matrix({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount,
+      particleDensity: particleDensity ?? 2000,
+      maxParticleCount: maxParticleCount ?? 50000,
+      minParticleCount: minParticleCount ?? 1000,
+      mouseRadius: mouseRadius ?? 80.0,
+      returnSpeed: returnSpeed ?? 0.04,
+      friction: friction ?? 0.90,
+      repelForce: repelForce ?? 6.0,
+      backgroundColor: backgroundColor ?? const Color(0xFF010A02),
+      particleColor: particleColor ?? const Color(0xFF00CC44),
+      displacedColor: displacedColor ?? const Color(0xFF88FF88),
+      pointerGlowColor: pointerGlowColor ?? const Color(0xFF44FF66),
+      minParticleSize: minParticleSize ?? 0.4,
+      maxParticleSize: maxParticleSize ?? 1.6,
+      minAlpha: minAlpha ?? 0.5,
+      maxAlpha: maxAlpha ?? 1.0,
+      sampleGap: sampleGap ?? 2,
+      fontWeight: fontWeight ?? FontWeight.bold,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      textAlign: textAlign ?? TextAlign.center,
+      drawBackground: drawBackground ?? true,
+      showPointerGlow: showPointerGlow ?? true,
+      pointerDotRadius: pointerDotRadius ?? 4.0,
+    );
+  }
 
   /// Preset: soft pastel glow.
-  factory ParticleConfig.pastel() => const ParticleConfig(
-    particleDensity: 1700,
-    particleColor: Color(0xFFDDA0DD),
-    displacedColor: Color(0xFFFFE4F0),
-    pointerGlowColor: Color(0xFFFFB6D9),
-    backgroundColor: Color(0xFF0A0610),
-    minParticleSize: 0.6,
-    maxParticleSize: 2.4,
-    repelForce: 6.0,
-    returnSpeed: 0.03,
-    friction: 0.90,
-  );
+  ///
+  /// ```dart
+  /// ParticleConfig.pastel()
+  /// ParticleConfig.pastel(drawBackground: false, fontSize: 36)
+  /// ```
+  factory ParticleConfig.pastel({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount,
+      particleDensity: particleDensity ?? 1700,
+      maxParticleCount: maxParticleCount ?? 50000,
+      minParticleCount: minParticleCount ?? 1000,
+      mouseRadius: mouseRadius ?? 80.0,
+      returnSpeed: returnSpeed ?? 0.03,
+      friction: friction ?? 0.90,
+      repelForce: repelForce ?? 6.0,
+      backgroundColor: backgroundColor ?? const Color(0xFF0A0610),
+      particleColor: particleColor ?? const Color(0xFFDDA0DD),
+      displacedColor: displacedColor ?? const Color(0xFFFFE4F0),
+      pointerGlowColor: pointerGlowColor ?? const Color(0xFFFFB6D9),
+      minParticleSize: minParticleSize ?? 0.6,
+      maxParticleSize: maxParticleSize ?? 2.4,
+      minAlpha: minAlpha ?? 0.5,
+      maxAlpha: maxAlpha ?? 1.0,
+      sampleGap: sampleGap ?? 2,
+      fontWeight: fontWeight ?? FontWeight.bold,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      textAlign: textAlign ?? TextAlign.center,
+      drawBackground: drawBackground ?? true,
+      showPointerGlow: showPointerGlow ?? true,
+      pointerDotRadius: pointerDotRadius ?? 4.0,
+    );
+  }
 
   /// Preset: minimal with fewer, larger particles.
-  factory ParticleConfig.minimal() => const ParticleConfig(
-    particleDensity: 900,
-    particleColor: Color(0xFFCCCCCC),
-    displacedColor: Color(0xFFFFFFFF),
-    pointerGlowColor: Color(0xFFEEEEEE),
-    backgroundColor: Color(0xFF111111),
-    minParticleSize: 1.0,
-    maxParticleSize: 3.0,
-    mouseRadius: 100,
-    repelForce: 10.0,
-    sampleGap: 3,
-  );
+  ///
+  /// ```dart
+  /// ParticleConfig.minimal()
+  /// ParticleConfig.minimal(particleColor: Colors.black, drawBackground: false)
+  /// ```
+  factory ParticleConfig.minimal({
+    int? particleCount,
+    double? particleDensity,
+    int? maxParticleCount,
+    int? minParticleCount,
+    double? mouseRadius,
+    double? returnSpeed,
+    double? friction,
+    double? repelForce,
+    Color? backgroundColor,
+    Color? particleColor,
+    Color? displacedColor,
+    Color? pointerGlowColor,
+    double? minParticleSize,
+    double? maxParticleSize,
+    double? minAlpha,
+    double? maxAlpha,
+    int? sampleGap,
+    FontWeight? fontWeight,
+    String? fontFamily,
+    double? fontSize,
+    TextAlign? textAlign,
+    bool? drawBackground,
+    bool? showPointerGlow,
+    double? pointerDotRadius,
+  }) {
+    return ParticleConfig(
+      particleCount: particleCount,
+      particleDensity: particleDensity ?? 900,
+      maxParticleCount: maxParticleCount ?? 50000,
+      minParticleCount: minParticleCount ?? 1000,
+      mouseRadius: mouseRadius ?? 100.0,
+      returnSpeed: returnSpeed ?? 0.04,
+      friction: friction ?? 0.88,
+      repelForce: repelForce ?? 10.0,
+      backgroundColor: backgroundColor ?? const Color(0xFF111111),
+      particleColor: particleColor ?? const Color(0xFFCCCCCC),
+      displacedColor: displacedColor ?? const Color(0xFFFFFFFF),
+      pointerGlowColor: pointerGlowColor ?? const Color(0xFFEEEEEE),
+      minParticleSize: minParticleSize ?? 1.0,
+      maxParticleSize: maxParticleSize ?? 3.0,
+      minAlpha: minAlpha ?? 0.5,
+      maxAlpha: maxAlpha ?? 1.0,
+      sampleGap: sampleGap ?? 3,
+      fontWeight: fontWeight ?? FontWeight.bold,
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      textAlign: textAlign ?? TextAlign.center,
+      drawBackground: drawBackground ?? true,
+      showPointerGlow: showPointerGlow ?? true,
+      pointerDotRadius: pointerDotRadius ?? 4.0,
+    );
+  }
 }
