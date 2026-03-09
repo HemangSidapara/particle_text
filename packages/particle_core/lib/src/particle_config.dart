@@ -4,18 +4,23 @@ import 'package:flutter/material.dart';
 ///
 /// Controls particle behavior, appearance, physics, and text rendering.
 ///
-/// ### Responsive particle count
+/// ### How particle count works
 ///
-/// By default, particle count scales automatically with screen size
-/// using [particleDensity]. This ensures text looks equally dense
-/// on a mobile phone and a 4K desktop monitor.
+/// Particle count is determined by [particleDensity], which defines how many
+/// particles to spawn per 100,000 logical pixels² of **content area**
+/// (the text bounding box or image drawn area — NOT the full screen).
 ///
+/// This makes count automatically font-size-aware:
+/// - Larger [fontSize] → bigger text bounding box → more content area → more particles
+/// - Multi-line text → taller bounding box → more particles
+/// - Larger images → more drawn area → more particles
+///
+/// Fine-tune coverage via [sampleGap] (lower = denser pixel sampling = more
+/// target positions for particles to snap onto).
+///
+/// To override with an exact fixed count:
 /// ```dart
-/// // Auto-scales (recommended)
-/// ParticleConfig(particleDensity: 2000)
-///
-/// // Fixed count (manual override)
-/// ParticleConfig(particleCount: 6000)
+/// ParticleConfig(particleCount: 6000)  // strict, ignores content size
 /// ```
 ///
 /// ### Presets with overrides
@@ -31,30 +36,33 @@ import 'package:flutter/material.dart';
 /// config.copyWith(particleColor: Colors.red, fontSize: 32)
 /// ```
 class ParticleConfig {
-  /// Fixed particle count. When set, overrides [particleDensity].
-  /// Use this only when you need an exact number regardless of screen size.
+  /// Fixed particle count. When set, this exact number is used regardless
+  /// of text size, font size, or screen size.
+  ///
+  /// When null (default), particle count equals the number of sampled
+  /// pixels from the text/image content, capped at [maxParticleCount].
   final int? particleCount;
 
-  /// Particles per 100,000 logical pixels² of screen area.
-  /// The effective count is calculated as:
+  /// Particles per 100,000 logical pixels² of **content area**.
   ///
-  /// `effectiveCount = (screenWidth × screenHeight × density / 100000)`
+  /// Content area is the bounding box of the rendered text or the drawn
+  /// area of the scaled image — NOT the full widget/screen size. This makes
+  /// the count automatically scale with [fontSize]: a larger font produces a
+  /// bigger bounding box, so more particles are spawned to fill it.
   ///
-  /// Reference values at default density (2000):
-  /// - Mobile  (360×800)  → ~5,760 particles
-  /// - Tablet  (768×1024) → ~15,729 particles
-  /// - Desktop (1920×1080) → ~41,472 particles
+  /// The built-in ParticleText and ParticleImage widgets use this value
+  /// via [effectiveParticleCount] to compute how many particles to create.
   ///
   /// Ignored when [particleCount] is set.
   final double particleDensity;
 
-  /// Maximum particle count to prevent performance issues on very
-  /// large screens. Only applies when using [particleDensity].
+  /// Maximum particle count to prevent performance issues.
+  /// Applies when count is auto-determined from content.
   /// Default: 50,000 (safe for drawRawAtlas rendering).
   final int maxParticleCount;
 
-  /// Minimum particle count to ensure text is visible on tiny screens.
-  /// Only applies when using [particleDensity]. Default: 1,000.
+  /// Minimum particle count to ensure visibility on tiny screens.
+  /// Only used with [effectiveParticleCount]. Default: 1,000.
   final int minParticleCount;
 
   /// Radius around the pointer that repels particles (in logical pixels).
@@ -96,8 +104,15 @@ class ParticleConfig {
   /// Maximum particle opacity (0.0–1.0).
   final double maxAlpha;
 
-  /// Sampling gap in physical pixels when rasterizing text.
-  /// Lower = more text-pixel targets (denser coverage). Default: 2.
+  /// Sampling gap in pixels when rasterizing text/image.
+  /// Lower = more sampled pixels = more particles = denser coverage.
+  /// This is the primary control for particle density.
+  ///
+  /// ```dart
+  /// ParticleConfig(sampleGap: 1)  // every pixel (densest)
+  /// ParticleConfig(sampleGap: 2)  // every 2nd pixel (default)
+  /// ParticleConfig(sampleGap: 4)  // every 4th pixel (sparser)
+  /// ```
   final int sampleGap;
 
   /// Font weight used for rendering the text shape.
@@ -107,8 +122,19 @@ class ParticleConfig {
   final String? fontFamily;
 
   /// Font size for text rendering in logical pixels.
-  /// When null, defaults to 60.0. Set this to control text size
-  /// and enable multi-line wrapping (text wraps when it exceeds widget width).
+  ///
+  /// When null (default), a **responsive size** is computed automatically
+  /// from the widget dimensions:
+  /// ```
+  /// min(widgetWidth, widgetHeight) × 0.18, clamped to [32, 200]
+  /// ```
+  /// This makes text look appropriately sized on all devices:
+  /// - Mobile  (360px)  → ~48px
+  /// - Tablet  (768px)  → ~90px
+  /// - Desktop (1080px) → ~160px
+  ///
+  /// Set this explicitly to control text size. Text wraps when it
+  /// exceeds widget width.
   final double? fontSize;
 
   /// Text alignment for multi-line text.
@@ -126,7 +152,7 @@ class ParticleConfig {
 
   const ParticleConfig({
     this.particleCount,
-    this.particleDensity = 2000,
+    this.particleDensity = 10000,
     this.maxParticleCount = 50000,
     this.minParticleCount = 1000,
     this.mouseRadius = 80.0,
@@ -151,16 +177,31 @@ class ParticleConfig {
     this.pointerDotRadius = 4.0,
   });
 
-  /// Calculate effective particle count for the given screen [size].
+  /// Calculate particle count from [contentArea] and [particleDensity].
   ///
-  /// If [particleCount] is set, returns that value directly.
-  /// Otherwise, scales based on [particleDensity] and screen area.
-  int effectiveParticleCount(Size size) {
+  /// [contentArea] is the area in logical pixels² of the actual content
+  /// (text bounding box or image drawn area). The formula is:
+  ///
+  /// ```
+  /// count = contentArea × particleDensity / 100,000
+  /// ```
+  ///
+  /// So with the default density of 2000 and a text bounding box of
+  /// 400×80 = 32,000 px², you get: 32000 × 2000 / 100000 = 640 particles.
+  /// A bigger fontSize (e.g. 80 instead of 40) roughly doubles the
+  /// bounding box area, doubling the particle count automatically.
+  ///
+  /// Returns [particleCount] directly when it is explicitly set.
+  /// Result is clamped to [[minParticleCount], [maxParticleCount]].
+  int effectiveParticleCount(double contentArea) {
     if (particleCount != null) return particleCount!;
 
-    final area = size.width * size.height;
-    final count = (area * particleDensity / 100000).round();
-    return count.clamp(minParticleCount, maxParticleCount);
+    // density = particles per 100,000 px² of content area
+    final count = (contentArea * particleDensity / 100000).round();
+    // maxParticleCount is the hard cap — if user sets it below minParticleCount,
+    // max wins (e.g. ParticleConfig(maxParticleCount: 100) in tests).
+    final effectiveMin = minParticleCount <= maxParticleCount ? minParticleCount : maxParticleCount;
+    return count.clamp(effectiveMin, maxParticleCount);
   }
 
   @override
@@ -280,8 +321,7 @@ class ParticleConfig {
     );
   }
 
-  // ── Presets ─────────────────────────────────────────────────────
-  // All presets accept optional overrides for any parameter.
+  // Presets — all accept optional overrides for any parameter.
 
   /// Preset: dense cosmic dust look.
   ///
@@ -317,7 +357,7 @@ class ParticleConfig {
   }) {
     return ParticleConfig(
       particleCount: particleCount,
-      particleDensity: particleDensity ?? 2800,
+      particleDensity: particleDensity ?? 14000,
       maxParticleCount: maxParticleCount ?? 50000,
       minParticleCount: minParticleCount ?? 1000,
       mouseRadius: mouseRadius ?? 80.0,
@@ -377,7 +417,7 @@ class ParticleConfig {
   }) {
     return ParticleConfig(
       particleCount: particleCount,
-      particleDensity: particleDensity ?? 2400,
+      particleDensity: particleDensity ?? 12000,
       maxParticleCount: maxParticleCount ?? 50000,
       minParticleCount: minParticleCount ?? 1000,
       mouseRadius: mouseRadius ?? 80.0,
@@ -437,7 +477,7 @@ class ParticleConfig {
   }) {
     return ParticleConfig(
       particleCount: particleCount,
-      particleDensity: particleDensity ?? 2000,
+      particleDensity: particleDensity ?? 10000,
       maxParticleCount: maxParticleCount ?? 50000,
       minParticleCount: minParticleCount ?? 1000,
       mouseRadius: mouseRadius ?? 80.0,
@@ -497,7 +537,7 @@ class ParticleConfig {
   }) {
     return ParticleConfig(
       particleCount: particleCount,
-      particleDensity: particleDensity ?? 1700,
+      particleDensity: particleDensity ?? 8500,
       maxParticleCount: maxParticleCount ?? 50000,
       minParticleCount: minParticleCount ?? 1000,
       mouseRadius: mouseRadius ?? 80.0,
@@ -557,7 +597,7 @@ class ParticleConfig {
   }) {
     return ParticleConfig(
       particleCount: particleCount,
-      particleDensity: particleDensity ?? 900,
+      particleDensity: particleDensity ?? 4500,
       maxParticleCount: maxParticleCount ?? 50000,
       minParticleCount: minParticleCount ?? 1000,
       mouseRadius: mouseRadius ?? 100.0,

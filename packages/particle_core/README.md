@@ -33,52 +33,59 @@ dependencies:
 
 ## ParticleConfig options
 
-| Parameter          | Type         | Default   | Description                                                        |
-|--------------------|--------------|-----------|--------------------------------------------------------------------|
-| `particleDensity`  | `double`     | `2000`    | Particles per 100k px² of screen area (auto-scales)                |
-| `particleCount`    | `int?`       | `null`    | Fixed count — overrides density when set                           |
-| `maxParticleCount` | `int`        | `50000`   | Upper cap for density scaling                                      |
-| `minParticleCount` | `int`        | `1000`    | Lower floor for density scaling                                    |
-| `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)                              |
-| `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                                     |
-| `friction`         | `double`     | `0.88`    | Velocity damping (0.8–0.95)                                        |
-| `repelForce`       | `double`     | `8.0`     | Pointer repulsion strength (1.0–20.0)                              |
-| `backgroundColor`  | `Color`      | `#020308` | Canvas background                                                  |
-| `particleColor`    | `Color`      | `#8CAADE` | Particle color at rest                                             |
-| `displacedColor`   | `Color`      | `#DCE5FF` | Particle color when scattered                                      |
-| `pointerGlowColor` | `Color`      | `#C8D2F0` | Glow orb color                                                     |
-| `minParticleSize`  | `double`     | `0.4`     | Min particle radius                                                |
-| `maxParticleSize`  | `double`     | `2.2`     | Max particle radius                                                |
-| `minAlpha`         | `double`     | `0.5`     | Min particle opacity                                               |
-| `maxAlpha`         | `double`     | `1.0`     | Max particle opacity                                               |
-| `sampleGap`        | `int`        | `2`       | Pixel sampling density (lower = more targets)                      |
-| `fontWeight`       | `FontWeight` | `bold`    | Text rendering weight                                              |
-| `fontFamily`       | `String?`    | `null`    | Custom font family                                                 |
-| `showPointerGlow`  | `bool`       | `true`    | Show pointer glow orb                                              |
-| `pointerDotRadius` | `double`     | `4.0`     | Center dot radius                                                  |
-| `drawBackground`   | `bool`       | `true`    | Whether to draw the `backgroundColor` or transparent/overlay usage |
+| Parameter          | Type         | Default   | Description                                                           |
+|--------------------|--------------|-----------|-----------------------------------------------------------------------|
+| `particleCount`    | `int?`       | `null`    | Fixed count — strict override, ignores content size                   |
+| `particleDensity`  | `double`     | `10000`   | Particles per 100K px² of content area (text bbox / image drawn area) |
+| `maxParticleCount` | `int`        | `50000`   | Upper cap for auto-determined count                                   |
+| `minParticleCount` | `int`        | `1000`    | Lower floor for density-based count                                   |
+| `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)                                 |
+| `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                                        |
+| `friction`         | `double`     | `0.88`    | Velocity damping (0.8–0.95)                                           |
+| `repelForce`       | `double`     | `8.0`     | Pointer repulsion strength (1.0–20.0)                                 |
+| `backgroundColor`  | `Color`      | `#020308` | Canvas background                                                     |
+| `particleColor`    | `Color`      | `#8CAADE` | Particle color at rest                                                |
+| `displacedColor`   | `Color`      | `#DCE5FF` | Particle color when scattered                                         |
+| `pointerGlowColor` | `Color`      | `#C8D2F0` | Glow orb color                                                        |
+| `minParticleSize`  | `double`     | `0.4`     | Min particle radius                                                   |
+| `maxParticleSize`  | `double`     | `2.2`     | Max particle radius                                                   |
+| `minAlpha`         | `double`     | `0.5`     | Min particle opacity                                                  |
+| `maxAlpha`         | `double`     | `1.0`     | Max particle opacity                                                  |
+| `sampleGap`        | `int`        | `2`       | Pixel sampling gap (lower = more target positions for particles)      |
+| `fontWeight`       | `FontWeight` | `bold`    | Text rendering weight                                                 |
+| `fontFamily`       | `String?`    | `null`    | Custom font family                                                    |
+| `fontSize`         | `double?`    | `null`    | Font size — responsive when null (scales with widget size, 32–200 px) |
+| `textAlign`        | `TextAlign`  | `center`  | Text alignment for multi-line text                                    |
+| `drawBackground`   | `bool`       | `true`    | Draw solid background or transparent/overlay                          |
+| `showPointerGlow`  | `bool`       | `true`    | Show pointer glow orb                                                 |
+| `pointerDotRadius` | `double`     | `4.0`     | Center dot radius                                                     |
 
 ### Built-in presets
 
 | Preset                     | Density | Style                   |
 |----------------------------|---------|-------------------------|
-| `ParticleConfig()`         | 2000    | Default blue-white glow |
-| `ParticleConfig.cosmic()`  | 2800    | Dense cosmic blue dust  |
-| `ParticleConfig.fire()`    | 2400    | Fiery warm orange       |
-| `ParticleConfig.matrix()`  | 2000    | Neon green              |
-| `ParticleConfig.pastel()`  | 1700    | Soft pastel pink        |
-| `ParticleConfig.minimal()` | 900     | Fewer, larger particles |
+| `ParticleConfig()`         | 10000   | Default blue-white glow |
+| `ParticleConfig.cosmic()`  | 14000   | Dense cosmic blue dust  |
+| `ParticleConfig.fire()`    | 12000   | Fiery warm orange       |
+| `ParticleConfig.matrix()`  | 10000   | Neon green              |
+| `ParticleConfig.pastel()`  | 8500    | Soft pastel pink        |
+| `ParticleConfig.minimal()` | 4500    | Fewer, larger particles |
 
-### Responsive particle count
+### How particle count works
 
-Particle count scales automatically with screen size:
+Particle count is determined by `particleDensity` × **content area**:
 
+```text
+count = contentArea × particleDensity / 100,000
 ```
-Mobile  (360×800)   → ~5,760 particles
-Tablet  (768×1024)  → ~15,729 particles
-Desktop (1920×1080) → ~41,472 particles
-4K      (3840×2160) → ~50,000 particles (capped)
-```
+
+- **Content area** = text bounding box (width × height) or image drawn area — NOT the full screen
+- Larger `fontSize` → bigger bounding box → more particles automatically
+- Multi-line text → taller bounding box → more particles
+- `sampleGap` controls how many target positions are sampled (lower = denser pixel targets)
+- `fontSize` is **responsive** when null — auto-scales with widget size (32–200 px)
+
+To force an exact count: `ParticleConfig(particleCount: 6000)`
 
 ## Performance
 

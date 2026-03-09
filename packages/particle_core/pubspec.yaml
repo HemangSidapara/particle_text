@@ -7,6 +7,13 @@ homepage: https://github.com/HemangSidapara/particle_packages
 repository: https://github.com/HemangSidapara/particle_packages/tree/master/packages/particle_core
 issue_tracker: https://github.com/HemangSidapara/particle_packages/issues
 
+topics:
+  - particles
+  - animation
+  - canvas
+  - physics
+  - effects
+
 resolution: workspace
 
 environment:

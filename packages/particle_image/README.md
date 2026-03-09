@@ -47,7 +47,7 @@ import 'package:particle_image/particle_image.dart';
 
 ParticleImage(
   image: myUiImage,
-  config: ParticleConfig(particleDensity: 2000),
+  config: ParticleConfig(sampleGap: 2),
 )
 ```
 
@@ -84,32 +84,45 @@ For transparent PNGs, only the alpha channel is used (transparent pixels are ski
 
 ## ParticleConfig options
 
-| Parameter          | Type     | Default   | Description                                     |
-|--------------------|----------|-----------|-------------------------------------------------|
-| `sampleGap`        | `int`    | `2`       | Pixel sampling density (lower = more particles) |
-| `maxParticleCount` | `int`    | `50000`   | Upper cap for particle count                    |
-| `mouseRadius`      | `double` | `80.0`    | Pointer repulsion radius (logical px)           |
-| `returnSpeed`      | `double` | `0.04`    | Spring return speed (0.01–0.1)                  |
-| `friction`         | `double` | `0.88`    | Velocity damping (0.8–0.95)                     |
-| `repelForce`       | `double` | `8.0`     | Pointer repulsion strength (1.0–20.0)           |
-| `backgroundColor`  | `Color`  | `#020308` | Canvas background                               |
-| `minParticleSize`  | `double` | `0.4`     | Min particle radius                             |
-| `maxParticleSize`  | `double` | `2.2`     | Max particle radius                             |
-| `minAlpha`         | `double` | `0.5`     | Min particle opacity                            |
-| `maxAlpha`         | `double` | `1.0`     | Max particle opacity                            |
-| `showPointerGlow`  | `bool`   | `true`    | Show pointer glow orb                           |
-| `pointerDotRadius` | `double` | `4.0`     | Center dot radius                               |
+| Parameter          | Type     | Default   | Description                                                      |
+|--------------------|----------|-----------|------------------------------------------------------------------|
+| `particleCount`    | `int?`   | `null`    | Fixed count — strict override                                    |
+| `particleDensity`  | `double` | `10000`   | Particles per 100K px² of drawn image area                       |
+| `maxParticleCount` | `int`    | `50000`   | Upper cap for particle count                                     |
+| `minParticleCount` | `int`    | `1000`    | Lower floor for density-based count                              |
+| `sampleGap`        | `int`    | `2`       | Pixel sampling gap (lower = more target positions)               |
+| `mouseRadius`      | `double` | `80.0`    | Pointer repulsion radius (logical px)                            |
+| `returnSpeed`      | `double` | `0.04`    | Spring return speed (0.01–0.1)                                   |
+| `friction`         | `double` | `0.88`    | Velocity damping (0.8–0.95)                                      |
+| `repelForce`       | `double` | `8.0`     | Pointer repulsion strength (1.0–20.0)                            |
+| `backgroundColor`  | `Color`  | `#020308` | Canvas background                                                |
+| `pointerGlowColor` | `Color`  | `#C8D2F0` | Glow orb color                                                   |
+| `minParticleSize`  | `double` | `0.4`     | Min particle radius                                              |
+| `maxParticleSize`  | `double` | `2.2`     | Max particle radius                                              |
+| `minAlpha`         | `double` | `0.5`     | Min particle opacity                                             |
+| `maxAlpha`         | `double` | `1.0`     | Max particle opacity                                             |
+| `drawBackground`   | `bool`   | `true`    | Draw solid background or transparent/overlay                     |
+| `showPointerGlow`  | `bool`   | `true`    | Show pointer glow orb                                            |
+| `pointerDotRadius` | `double` | `4.0`     | Center dot radius                                                |
 
 > **Note:** `particleColor` and `displacedColor` are ignored in image mode — per-pixel colors from the source image are used instead.
 
 ### Image particle count
 
-Unlike `particle_text`, particle count is determined by the number of visible pixels sampled from the image (1 particle per sampled pixel). Control density with `sampleGap`:
+Particle count is determined by `particleDensity` × **drawn image area**:
+
+```
+count = drawWidth × drawHeight × particleDensity / 100,000
+```
+
+- Larger images → more drawn area → more particles
+- `sampleGap` controls pixel target density (lower = denser target positions)
+
+Control coverage with `sampleGap` or `particleDensity`:
 
 ```dart
-ParticleConfig(sampleGap: 1)  // every pixel → most particles
-ParticleConfig(sampleGap: 2)  // every 2nd pixel (default)
-ParticleConfig(sampleGap: 4)  // every 4th pixel → fewer particles
+ParticleConfig(sampleGap: 1)       // densest pixel targets
+ParticleConfig(particleDensity: 14000)  // more particles per area
 ```
 
 Capped at `maxParticleCount` (default 50,000) for performance.

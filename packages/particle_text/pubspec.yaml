@@ -7,6 +7,13 @@ homepage: https://github.com/HemangSidapara/particle_packages
 repository: https://github.com/HemangSidapara/particle_packages/tree/master/packages/particle_text
 issue_tracker: https://github.com/HemangSidapara/particle_packages/issues
 
+topics:
+  - particles
+  - text
+  - animation
+  - effects
+  - interactive
+
 resolution: workspace
 
 environment:

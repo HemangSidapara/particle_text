@@ -22,9 +22,9 @@ class ParticlePainter extends CustomPainter {
   ParticlePainter({
     required this.system,
     required this.config,
-  })  : _bgPaint = Paint()..color = config.backgroundColor,
-        _atlasPaint = Paint(), // default srcOver — works on any background
-        super(repaint: system);
+  }) : _bgPaint = Paint()..color = config.backgroundColor,
+       _atlasPaint = Paint(), // default srcOver — works on any background
+       super(repaint: system);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -42,11 +42,7 @@ class ParticlePainter extends CustomPainter {
     final rects = system.srcRects;
     final colors = system.atlasColors;
 
-    if (sprite != null &&
-        transforms != null &&
-        rects != null &&
-        colors != null &&
-        transforms.isNotEmpty) {
+    if (sprite != null && transforms != null && rects != null && colors != null && transforms.isNotEmpty) {
       canvas.drawRawAtlas(
         sprite,
         transforms,

@@ -4,8 +4,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:particle_core/particle_core.dart';
 
-
-
 /// Renders an image as interactive particles.
 ///
 /// Each particle takes the color of its source pixel, creating
@@ -68,8 +66,7 @@ class ParticleImage extends StatefulWidget {
   State<ParticleImage> createState() => _ParticleImageState();
 }
 
-class _ParticleImageState extends State<ParticleImage>
-    with SingleTickerProviderStateMixin {
+class _ParticleImageState extends State<ParticleImage> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   late ParticleSystem _system;
   late ParticlePainter _painter;
@@ -101,7 +98,7 @@ class _ParticleImageState extends State<ParticleImage>
       _painter = ParticlePainter(system: _system, config: widget.config);
       _initialized = false;
       if (_lastSize != Size.zero) {
-        _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
+        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
       }
       return;
     }
@@ -109,7 +106,7 @@ class _ParticleImageState extends State<ParticleImage>
     if (oldWidget.image != widget.image && widget.image != null) {
       _initialized = false;
       if (_lastSize != Size.zero) {
-        _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
+        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
       }
     }
 
@@ -129,7 +126,9 @@ class _ParticleImageState extends State<ParticleImage>
     // Force re-init now that image is available
     _initialized = false;
     if (_lastSize != Size.zero) {
-      _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
+      if (mounted) {
+        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
+      }
     } else {
       // Size not known yet — setState to trigger build → LayoutBuilder → _initSystem
       if (mounted) setState(() {});
@@ -169,7 +168,7 @@ class _ParticleImageState extends State<ParticleImage>
 
   @override
   Widget build(BuildContext context) {
-    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
 
     Widget child = LayoutBuilder(
       builder: (context, constraints) {
@@ -180,14 +179,11 @@ class _ParticleImageState extends State<ParticleImage>
           child: GestureDetector(
             onPanStart: (d) => _system.pointer = d.localPosition,
             onPanUpdate: (d) => _system.pointer = d.localPosition,
-            onPanEnd: (_) =>
-                _system.pointer = const Offset(-9999, -9999),
-            onPanCancel: () =>
-                _system.pointer = const Offset(-9999, -9999),
+            onPanEnd: (_) => _system.pointer = const Offset(-9999, -9999),
+            onPanCancel: () => _system.pointer = const Offset(-9999, -9999),
             child: MouseRegion(
               onHover: (e) => _system.pointer = e.localPosition,
-              onExit: (_) =>
-                  _system.pointer = const Offset(-9999, -9999),
+              onExit: (_) => _system.pointer = const Offset(-9999, -9999),
               cursor: SystemMouseCursors.none,
               child: CustomPaint(
                 size: size,

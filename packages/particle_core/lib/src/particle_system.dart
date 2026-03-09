@@ -15,6 +15,22 @@ class _PixelSample {
   const _PixelSample(this.x, this.y, [this.color]);
 }
 
+/// Bundles sampled pixels with the content area they were sampled from.
+///
+/// [contentArea] is the area in logical pixels² of the actual rendered
+/// content (text bounding box or image drawn area). This is used by
+/// [ParticleConfig.effectiveParticleCount] to compute density-based count.
+class _SampleResult {
+  final List<_PixelSample> samples;
+
+  /// Area in logical pixels² of the content that produced these samples.
+  /// For text: textWidth × textHeight (the bounding box of the laid-out text).
+  /// For images: drawWidth × drawHeight (the aspect-fit area on screen).
+  final double contentArea;
+
+  const _SampleResult(this.samples, this.contentArea);
+}
+
 /// High-performance particle physics engine.
 ///
 /// Uses [ChangeNotifier] to drive [CustomPainter] repaints
@@ -40,7 +56,7 @@ class ParticleSystem extends ChangeNotifier {
   static const int spriteSize = 32;
   static const double _spriteHalf = spriteSize / 2.0;
 
-  // ── Pre-allocated render buffers ──
+  /// Pre-allocated render buffers
   Float32List? _transforms;
   Float32List? _srcRects;
   Int32List? _colors;
@@ -54,30 +70,46 @@ class ParticleSystem extends ChangeNotifier {
   }
 
   /// Rasterize [text] and create or re-target particles.
+  ///
+  /// Particle count is calculated from the text bounding-box area
+  /// and [ParticleConfig.particleDensity]. A larger [ParticleConfig.fontSize]
+  /// produces a bigger bounding box, which automatically yields more particles.
   Future<void> setText(String text, Size size) async {
-    final samples = await _getTextPixels(text, size);
-    if (samples.isEmpty) return;
+    final result = await _getTextPixels(text, size);
+    if (result.samples.isEmpty) return;
     usePerParticleColor = false;
-    _applyPixels(samples, size, forceReset: false);
+    _applyPixels(result, size, forceReset: false);
   }
 
   /// Sample [image] and create or re-target particles with per-pixel colors.
   ///
   /// The image is scaled to fit within [size] while preserving aspect ratio.
+  /// Particle count is calculated from the drawn image area and density.
   /// Always does a full particle reset since image content is entirely different.
   Future<void> setImage(ui.Image image, Size size) async {
-    final samples = await _getImagePixels(image, size);
-    if (samples.isEmpty) return;
+    final result = await _getImagePixels(image, size);
+    if (result.samples.isEmpty) return;
     usePerParticleColor = true;
-    _applyPixels(samples, size, forceReset: true);
+    _applyPixels(result, size, forceReset: true);
   }
 
-  void _applyPixels(List<_PixelSample> samples, Size size, {bool forceReset = false}) {
+  void _applyPixels(_SampleResult result, Size size, {bool forceReset = false}) {
     if (particles.isEmpty || forceReset) {
-      _spawnParticles(samples, size);
+      _spawnParticles(result, size);
       _allocateBuffers();
     } else {
-      _retargetParticles(samples);
+      // Compute the desired count for the new content. Text changes can
+      // produce a very different content area (e.g. "Hi" → "Riverpod"),
+      // so particle count must adapt to keep full coverage.
+      final densityCount = config.effectiveParticleCount(result.contentArea);
+      final targetCount = min(densityCount, result.samples.length);
+
+      // Add/remove particles to match — preserves morph for existing ones.
+      if (targetCount != particles.length) {
+        _adjustParticleCount(targetCount, size);
+        _allocateBuffers();
+      }
+      _retargetParticles(result.samples);
     }
   }
 
@@ -87,8 +119,6 @@ class ParticleSystem extends ChangeNotifier {
     _buildRenderData();
     notifyListeners();
   }
-
-  // ── Physics ──────────────────────────────────────────────────────
 
   void _updatePhysics() {
     final px = pointer.dx;
@@ -124,8 +154,6 @@ class ParticleSystem extends ChangeNotifier {
       p.y += p.vy;
     }
   }
-
-  // ── Render buffer preparation ────────────────────────────────────
 
   void _allocateBuffers() {
     final n = particles.length;
@@ -169,7 +197,7 @@ class ParticleSystem extends ChangeNotifier {
 
       // Color
       if (p.targetColor != null) {
-        // Image mode: use per-particle color with particle alpha
+        // Image mode: per-particle color with particle alpha
         final tc = p.targetColor!;
         final a = (p.alpha * 255).toInt().clamp(0, 255);
         colors[i] = (a << 24) | (tc & 0x00FFFFFF);
@@ -196,41 +224,113 @@ class ParticleSystem extends ChangeNotifier {
 
   Int32List? get atlasColors => _colors;
 
-  // ── Particle lifecycle ───────────────────────────────────────────
-
-  void _spawnParticles(List<_PixelSample> samples, Size size) {
+  /// Spawn particles from sampled pixel targets.
+  ///
+  /// Particle count is determined by:
+  /// 1. [ParticleConfig.particleCount] if explicitly set → use that exact count.
+  /// 2. Otherwise, [ParticleConfig.particleDensity] × contentArea / 100,000,
+  ///    clamped to [[ParticleConfig.minParticleCount], [ParticleConfig.maxParticleCount]].
+  ///
+  /// The count is also capped at [samples.length] so we never request more
+  /// particles than available target positions (each particle needs a pixel
+  /// to snap onto). To get more target positions, decrease [ParticleConfig.sampleGap].
+  void _spawnParticles(_SampleResult result, Size size) {
     particles.clear();
+    final samples = result.samples;
 
-    // In image mode: one particle per sampled pixel for full coverage,
-    // capped at maxParticleCount for performance.
-    // In text mode: use density-based count (samples repeat via modulo).
-    final count =
-        usePerParticleColor ? min(samples.length, config.maxParticleCount) : config.effectiveParticleCount(size);
+    // Compute density-based count from the content area.
+    // effectiveParticleCount handles: explicit particleCount > density calc > clamp.
+    final densityCount = config.effectiveParticleCount(result.contentArea);
+
+    // Cap at available sample positions — can't place more particles than
+    // target pixels. Users can decrease sampleGap for more targets.
+    final count = min(densityCount, samples.length);
+
     final maxDist = max(size.width, size.height);
     final sizeRange = config.maxParticleSize - config.minParticleSize;
     final alphaRange = config.maxAlpha - config.minAlpha;
     final cx = size.width / 2;
     final cy = size.height / 2;
 
+    // When count < samples.length, evenly stride across ALL sample
+    // positions so particles cover the full text uniformly — not just
+    // the top-left portion (samples are scanned left→right, top→bottom).
+    // e.g. 5000 particles from 15000 samples → take every 3rd sample.
+    final bool needsStride = count < samples.length;
+
     for (int i = 0; i < count; i++) {
-      final s = samples[i % samples.length];
+      final sampleIdx = needsStride
+          ? (i * samples.length) ~/
+                count // uniform spread
+          : i % samples.length; // wrap when more particles than samples
+      final s = samples[sampleIdx];
       final angle = _rng.nextDouble() * pi * 2;
       final dist = _rng.nextDouble() * maxDist;
-      particles.add(Particle(
-        x: cx + cos(angle) * dist,
-        y: cy + sin(angle) * dist,
-        tx: s.x,
-        ty: s.y,
-        size: _rng.nextDouble() * sizeRange + config.minParticleSize,
-        alpha: _rng.nextDouble() * alphaRange + config.minAlpha,
-        targetColor: s.color,
-      ));
+      particles.add(
+        Particle(
+          x: cx + cos(angle) * dist,
+          y: cy + sin(angle) * dist,
+          tx: s.x,
+          ty: s.y,
+          size: _rng.nextDouble() * sizeRange + config.minParticleSize,
+          alpha: _rng.nextDouble() * alphaRange + config.minAlpha,
+          targetColor: s.color,
+        ),
+      );
     }
   }
 
+  /// Add or remove particles to reach [targetCount].
+  ///
+  /// New particles spawn at random positions around the center and will
+  /// animate toward their targets on the next retarget — preserving the
+  /// smooth morph effect for existing particles.
+  void _adjustParticleCount(int targetCount, Size size) {
+    final current = particles.length;
+    if (targetCount == current) return;
+
+    if (targetCount > current) {
+      // Add more particles at random positions (they'll morph to targets)
+      final maxDist = max(size.width, size.height);
+      final sizeRange = config.maxParticleSize - config.minParticleSize;
+      final alphaRange = config.maxAlpha - config.minAlpha;
+      final cx = size.width / 2;
+      final cy = size.height / 2;
+
+      for (int i = current; i < targetCount; i++) {
+        final angle = _rng.nextDouble() * pi * 2;
+        final dist = _rng.nextDouble() * maxDist;
+        particles.add(
+          Particle(
+            x: cx + cos(angle) * dist,
+            y: cy + sin(angle) * dist,
+            tx: cx,
+            ty: cy,
+            size: _rng.nextDouble() * sizeRange + config.minParticleSize,
+            alpha: _rng.nextDouble() * alphaRange + config.minAlpha,
+          ),
+        );
+      }
+    } else {
+      // Remove excess particles
+      particles.removeRange(targetCount, current);
+    }
+  }
+
+  /// Retarget existing particles to new sample positions.
+  ///
+  /// Uses even stride when particles < samples to distribute uniformly
+  /// across the full content (same logic as [_spawnParticles]).
   void _retargetParticles(List<_PixelSample> samples) {
-    for (int i = 0; i < particles.length; i++) {
-      final s = samples[i % samples.length];
+    final count = particles.length;
+    final needsStride = count < samples.length;
+
+    for (int i = 0; i < count; i++) {
+      final sampleIdx = needsStride
+          ? (i * samples.length) ~/
+                count // uniform spread
+          : i % samples.length; // wrap when more particles than samples
+      final s = samples[sampleIdx];
       particles[i].tx = s.x;
       particles[i].ty = s.y;
       particles[i].targetColor = s.color;
@@ -238,8 +338,6 @@ class ParticleSystem extends ChangeNotifier {
       particles[i].vy += (_rng.nextDouble() - 0.5) * 6;
     }
   }
-
-  // ── Sprite creation ──────────────────────────────────────────────
 
   static Future<ui.Image> _createSprite() async {
     const s = spriteSize;
@@ -271,16 +369,28 @@ class ParticleSystem extends ChangeNotifier {
     return image;
   }
 
-  // ── Text rasterization ───────────────────────────────────────────
-
-  Future<List<_PixelSample>> _getTextPixels(String text, Size size) async {
+  /// Rasterize text and sample opaque pixels as particle targets.
+  ///
+  /// Returns a [_SampleResult] containing:
+  /// - The sampled pixel positions (particle target coordinates).
+  /// - The **text bounding-box area** in logical pixels² (`textWidth × textHeight`
+  ///   after dividing out devicePixelRatio). This area is used by
+  ///   [ParticleConfig.effectiveParticleCount] to compute density-based count.
+  ///
+  /// Larger [ParticleConfig.fontSize] → bigger bounding box → larger contentArea
+  /// → more particles automatically (via density formula).
+  Future<_SampleResult> _getTextPixels(String text, Size size) async {
     final dpr = devicePixelRatio;
     final physW = (size.width * dpr).toInt();
     final physH = (size.height * dpr).toInt();
-    if (physW == 0 || physH == 0) return [];
+    if (physW == 0 || physH == 0) return const _SampleResult([], 0);
 
-    // Use user-provided fontSize, or default to 60
-    final logicalFontSize = config.fontSize ?? 60.0;
+    // Responsive default: scale with widget's shorter dimension so text
+    // looks proportional on any screen size.
+    //   Mobile  360px  → min(360,800)*0.18  = 64.8 → ~65px
+    //   Tablet  768px  → min(768,1024)*0.18 = 138  → ~138px
+    //   Desktop 1080px → min(1920,1080)*0.18= 194  → ~194px
+    final logicalFontSize = config.fontSize ?? (min(size.width, size.height) * 0.18).clamp(32.0, 200.0);
 
     final textPainter = TextPainter(
       text: TextSpan(
@@ -296,11 +406,17 @@ class ParticleSystem extends ChangeNotifier {
       textAlign: config.textAlign,
     );
 
-    // Layout with max width — enables multi-line wrapping
+    // Layout with max width for multi-line wrapping
     textPainter.layout(maxWidth: physW.toDouble());
 
     final textW = textPainter.width;
     final textH = textPainter.height;
+
+    // Content area in logical pixels²: the text bounding box.
+    // Dividing physical dimensions by dpr converts to logical pixels.
+    // This area drives the density formula:
+    //   particleCount = contentArea × particleDensity / 100,000
+    final contentArea = (textW / dpr) * (textH / dpr);
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(
@@ -318,7 +434,7 @@ class ParticleSystem extends ChangeNotifier {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
     image.dispose();
     picture.dispose();
-    if (byteData == null) return [];
+    if (byteData == null) return const _SampleResult([], 0);
 
     final Uint8List raw = byteData.buffer.asUint8List();
     final List<_PixelSample> points = [];
@@ -328,32 +444,32 @@ class ParticleSystem extends ChangeNotifier {
       for (int x = 0; x < physW; x += gap) {
         final i = (y * physW + x) * 4;
         if (i + 3 < raw.length && raw[i + 3] > 128) {
-          points.add(_PixelSample(x / dpr, y / dpr)); // no color = text mode
+          points.add(_PixelSample(x / dpr, y / dpr));
         }
       }
     }
-    return points;
+    return _SampleResult(points, contentArea);
   }
 
-  // ── Image rasterization ──────────────────────────────────────────
-
-  /// Read source [image] pixel data directly and map positions
-  /// to fit centered within [size].
-  ///
-  /// Reads the original image bytes to avoid Flutter web DPR issues.
+  /// Read source image pixel data and map positions to fit within widget.
   /// Auto-detects background color by sampling corner pixels.
-  Future<List<_PixelSample>> _getImagePixels(
+  ///
+  /// Returns a [_SampleResult] containing:
+  /// - Sampled pixel positions with per-pixel colors.
+  /// - The **drawn image area** in logical pixels² (`drawW × drawH`),
+  ///   used by [ParticleConfig.effectiveParticleCount] for density calc.
+  Future<_SampleResult> _getImagePixels(
     ui.Image image,
     Size size, {
     Color? skipColor,
   }) async {
     final imgW = image.width;
     final imgH = image.height;
-    if (imgW == 0 || imgH == 0) return [];
+    if (imgW == 0 || imgH == 0) return const _SampleResult([], 0);
 
     // Read pixel data directly from the source image
     final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    if (byteData == null) return [];
+    if (byteData == null) return const _SampleResult([], 0);
 
     final raw = byteData.buffer.asUint8List();
 
@@ -380,6 +496,11 @@ class ParticleSystem extends ChangeNotifier {
       drawH = size.height * 0.85;
       drawW = drawH * imgAspect;
     }
+
+    // Content area in logical pixels² — the area the image actually
+    // occupies on screen after aspect-fit scaling.
+    // Used by density formula: count = contentArea × density / 100,000
+    final contentArea = drawW * drawH;
 
     final offsetX = (size.width - drawW) / 2;
     final offsetY = (size.height - drawH) / 2;
@@ -424,12 +545,11 @@ class ParticleSystem extends ChangeNotifier {
         points.add(_PixelSample(logX, logY, color));
       }
     }
-    return points;
+    return _SampleResult(points, contentArea);
   }
 
-  /// Sample corner pixels and detect background color.
-  /// If 3+ corners share a similar color, returns that color.
-  /// Returns null if no consistent background is found (likely transparent PNG).
+  /// Detect background color by sampling corner and edge pixels.
+  /// Returns null if no consistent background found (transparent PNG).
   static Color? _detectBackgroundColor(
     Uint8List raw,
     int stride,

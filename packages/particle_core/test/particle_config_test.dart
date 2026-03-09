@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:particle_core/particle_core.dart';
@@ -9,7 +8,7 @@ void main() {
       const config = ParticleConfig();
 
       expect(config.particleCount, isNull);
-      expect(config.particleDensity, 2000);
+      expect(config.particleDensity, 10000);
       expect(config.maxParticleCount, 50000);
       expect(config.minParticleCount, 1000);
       expect(config.mouseRadius, 80.0);
@@ -30,12 +29,12 @@ void main() {
 
     test('fixed particleCount overrides density', () {
       const config = ParticleConfig(particleCount: 5000);
-      const mobile = Size(360, 800);
-      const desktop = Size(1920, 1080);
+      const mobileArea = 360.0 * 800.0; // 288,000 px²
+      const desktopArea = 1920.0 * 1080.0; // 2,073,600 px²
 
-      // Returns exact count regardless of screen size
-      expect(config.effectiveParticleCount(mobile), 5000);
-      expect(config.effectiveParticleCount(desktop), 5000);
+      // Returns exact count regardless of content area
+      expect(config.effectiveParticleCount(mobileArea), 5000);
+      expect(config.effectiveParticleCount(desktopArea), 5000);
     });
 
     test('custom values override defaults', () {
@@ -64,33 +63,34 @@ void main() {
   });
 
   group('ParticleConfig - responsive particle count', () {
-    test('scales with screen area on mobile', () {
-      const config = ParticleConfig(); // density: 2000
-      const mobile = Size(360, 800); // area: 288,000
+    test('scales with content area (small text)', () {
+      const config = ParticleConfig(); // density: 10000
+      // e.g. text bounding box 400×80 at fontSize 40 = 32,000 px²
+      const contentArea = 400.0 * 80.0; // 32,000 px²
 
-      final count = config.effectiveParticleCount(mobile);
-      // 288000 * 2000 / 100000 = 5760
-      expect(count, 5760);
+      final count = config.effectiveParticleCount(contentArea);
+      // 32000 * 10000 / 100000 = 3200
+      expect(count, 3200);
     });
 
-    test('scales with screen area on tablet', () {
+    test('scales with content area (large text)', () {
       const config = ParticleConfig();
-      const tablet = Size(768, 1024); // area: 786,432
+      // e.g. text bounding box 800×160 at fontSize 80 = 128,000 px²
+      const contentArea = 800.0 * 160.0; // 128,000 px²
 
-      final count = config.effectiveParticleCount(tablet);
-      // 786432 * 2000 / 100000 = 15729 (rounded)
-      expect(count, greaterThan(15000));
-      expect(count, lessThan(16000));
+      final count = config.effectiveParticleCount(contentArea);
+      // 128000 * 10000 / 100000 = 12800
+      expect(count, 12800);
     });
 
-    test('scales with screen area on desktop', () {
+    test('scales with content area (multi-line text)', () {
       const config = ParticleConfig();
-      const desktop = Size(1920, 1080); // area: 2,073,600
+      // e.g. multi-line text block 600×400 = 240,000 px²
+      const contentArea = 600.0 * 400.0; // 240,000 px²
 
-      final count = config.effectiveParticleCount(desktop);
-      // 2073600 * 2000 / 100000 = 41472
-      expect(count, greaterThan(40000));
-      expect(count, lessThan(42000));
+      final count = config.effectiveParticleCount(contentArea);
+      // 240000 * 10000 / 100000 = 24000
+      expect(count, 24000);
     });
 
     test('respects maxParticleCount cap', () {
@@ -98,9 +98,10 @@ void main() {
         particleDensity: 5000,
         maxParticleCount: 20000,
       );
-      const huge = Size(3840, 2160); // 4K
+      // Very large content area
+      const hugeArea = 3840.0 * 2160.0; // 8,294,400 px²
 
-      final count = config.effectiveParticleCount(huge);
+      final count = config.effectiveParticleCount(hugeArea);
       expect(count, 20000);
     });
 
@@ -109,19 +110,20 @@ void main() {
         particleDensity: 100,
         minParticleCount: 2000,
       );
-      const tiny = Size(200, 300);
+      // Very small content area
+      const tinyArea = 200.0 * 300.0; // 60,000 px²
 
-      final count = config.effectiveParticleCount(tiny);
+      final count = config.effectiveParticleCount(tinyArea);
       expect(count, 2000);
     });
 
     test('different densities produce proportional counts', () {
       const low = ParticleConfig(particleDensity: 1000);
       const high = ParticleConfig(particleDensity: 3000);
-      const size = Size(1000, 1000); // area: 1,000,000
+      const contentArea = 1000.0 * 1000.0; // 1,000,000 px²
 
-      final lowCount = low.effectiveParticleCount(size);
-      final highCount = high.effectiveParticleCount(size);
+      final lowCount = low.effectiveParticleCount(contentArea);
+      final highCount = high.effectiveParticleCount(contentArea);
 
       // 1000000 * 1000 / 100000 = 10000
       // 1000000 * 3000 / 100000 = 30000
@@ -135,7 +137,7 @@ void main() {
     test('cosmic preset has higher density', () {
       final config = ParticleConfig.cosmic();
 
-      expect(config.particleDensity, 2800);
+      expect(config.particleDensity, 14000);
       expect(config.repelForce, 10.0);
       expect(config.friction, 0.86);
       expect(config.maxParticleSize, 1.8);
@@ -145,7 +147,7 @@ void main() {
     test('fire preset values', () {
       final config = ParticleConfig.fire();
 
-      expect(config.particleDensity, 2400);
+      expect(config.particleDensity, 12000);
       expect(config.repelForce, 12.0);
       expect(config.returnSpeed, 0.03);
       expect(config.particleCount, isNull);
@@ -154,7 +156,7 @@ void main() {
     test('matrix preset values', () {
       final config = ParticleConfig.matrix();
 
-      expect(config.particleDensity, 2000);
+      expect(config.particleDensity, 10000);
       expect(config.repelForce, 6.0);
       expect(config.friction, 0.90);
       expect(config.particleCount, isNull);
@@ -163,7 +165,7 @@ void main() {
     test('pastel preset values', () {
       final config = ParticleConfig.pastel();
 
-      expect(config.particleDensity, 1700);
+      expect(config.particleDensity, 8500);
       expect(config.minParticleSize, 0.6);
       expect(config.maxParticleSize, 2.4);
       expect(config.particleCount, isNull);
@@ -172,7 +174,7 @@ void main() {
     test('minimal preset has lowest density', () {
       final config = ParticleConfig.minimal();
 
-      expect(config.particleDensity, 900);
+      expect(config.particleDensity, 4500);
       expect(config.minParticleSize, 1.0);
       expect(config.maxParticleSize, 3.0);
       expect(config.mouseRadius, 100);
@@ -180,7 +182,7 @@ void main() {
       expect(config.particleCount, isNull);
     });
 
-    test('all presets scale correctly to desktop', () {
+    test('all presets scale correctly with large content area', () {
       final presets = [
         ParticleConfig.cosmic(),
         ParticleConfig.fire(),
@@ -188,10 +190,11 @@ void main() {
         ParticleConfig.pastel(),
         ParticleConfig.minimal(),
       ];
-      const desktop = Size(1920, 1080);
+      // Simulate a large multi-line text block (e.g. 800×600 = 480,000 px²)
+      const largeContentArea = 800.0 * 600.0;
 
       for (final preset in presets) {
-        final count = preset.effectiveParticleCount(desktop);
+        final count = preset.effectiveParticleCount(largeContentArea);
         expect(count, greaterThan(preset.minParticleCount));
         expect(count, lessThanOrEqualTo(preset.maxParticleCount));
       }

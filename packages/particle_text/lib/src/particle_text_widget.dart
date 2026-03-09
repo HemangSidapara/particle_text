@@ -75,7 +75,7 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
       _painter = ParticlePainter(system: _system, config: widget.config);
       _initialized = false;
       if (_lastSize != Size.zero) {
-        _initSystem(_lastSize, MediaQuery.of(context).devicePixelRatio);
+        _initSystem(_lastSize, MediaQuery.devicePixelRatioOf(context));
       }
     } else if (textChanged && _lastSize != Size.zero) {
       // Only text changed — retarget existing particles (smooth morph)
@@ -114,7 +114,7 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
 
     Widget child = LayoutBuilder(
       builder: (context, constraints) {

@@ -242,23 +242,12 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
       fontSize: _fontSize,
     );
     return Scaffold(
-      backgroundColor: _isDark ? preset.config.backgroundColor : Colors.white.withValues(alpha: 0.3),
+      backgroundColor: _isDark ? preset.config.backgroundColor : Colors.white,
       body: Stack(
         children: [
           ParticleText(
             text: _text,
             config: config,
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 8,
-            child: IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: themeColor.withValues(alpha: 0.3),
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
           ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
@@ -267,10 +256,18 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
             child: Row(
               mainAxisAlignment: .spaceBetween,
               children: [
-                SizedBox(width: 64),
+                IconButton(
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: themeColor.withValues(alpha: 0.3),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     'TOUCH & DRAG TO INTERACT',
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       color: themeColor.withValues(alpha: _isDark ? 0.15 : 0.5),
                       fontSize: 11,
@@ -278,26 +275,28 @@ class _FullScreenDemoState extends State<FullScreenDemo> {
                     ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _isDark = !_isDark;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isDark ? const Color(0xFF8CAADE) : Color(0xFF020308),
-                  ),
-                  icon: Icon(
-                    _isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                    color: _isDark ? const Color(0xFF020308) : Color(0xFF8CAADE),
-                  ),
-                  label: Text(
-                    _isDark ? "Dark" : "Light",
-                    style: TextStyle(
+                if (_presetIndex == 0) ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isDark = !_isDark;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isDark ? const Color(0xFF8CAADE) : Color(0xFF020308),
+                    ),
+                    icon: Icon(
+                      _isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                       color: _isDark ? const Color(0xFF020308) : Color(0xFF8CAADE),
                     ),
+                    label: Text(
+                      _isDark ? "Dark" : "Light",
+                      style: TextStyle(
+                        color: _isDark ? const Color(0xFF020308) : Color(0xFF8CAADE),
+                      ),
+                    ),
                   ),
-                ),
+                ],
                 SizedBox(width: 16),
               ],
             ),
@@ -815,7 +814,7 @@ class CustomColorsDemo extends StatefulWidget {
 }
 
 class _CustomColorsDemoState extends State<CustomColorsDemo> {
-  final double _fontSize = 220.0;
+  double _fontSize = 90;
   double _hue = 220;
   double _brightness = 0.02;
   double _repelForce = 8;
@@ -891,6 +890,13 @@ class _CustomColorsDemoState extends State<CustomColorsDemo> {
                   0.01,
                   0.1,
                   (v) => setState(() => _returnSpeed = v),
+                ),
+                _slider(
+                  'Font Size',
+                  _fontSize,
+                  40,
+                  512,
+                  (v) => setState(() => _fontSize = v),
                 ),
               ],
             ),
@@ -969,6 +975,7 @@ class PerformanceDemo extends StatefulWidget {
 
 class _PerformanceDemoState extends State<PerformanceDemo> {
   double _density = 2000;
+  double _fontSize = 60.0;
   int _frameCount = 0;
   double _fps = 0;
   late Timer _fpsTimer;
@@ -1009,9 +1016,11 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // Use full screen area as a rough proxy for content area in this demo.
     final effectiveCount = ParticleConfig(
       particleDensity: _density,
-    ).effectiveParticleCount(size);
+      fontSize: _fontSize,
+    ).effectiveParticleCount(size.width * size.height);
 
     return Scaffold(
       backgroundColor: const Color(0xFF020308),
@@ -1027,7 +1036,11 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
               children: [
                 ParticleText(
                   text: 'FPS',
-                  config: ParticleConfig(particleDensity: _density),
+                  config: ParticleConfig(
+                    particleDensity: _density,
+                    fontSize: _fontSize,
+                    drawBackground: false,
+                  ),
                 ),
                 // FPS overlay
                 Positioned(
@@ -1071,66 +1084,97 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Particle Density',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      '~$effectiveCount particles',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                _buildSlider(
+                  title: 'Particle Density',
+                  valueLabel: '~$effectiveCount particles',
+                  value: _density,
+                  min: 500,
+                  max: 8000,
+                  onChanged: (v) => setState(() => _density = v),
                 ),
-                const SizedBox(height: 4),
-                SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 4,
-                    activeTrackColor: Colors.white.withValues(alpha: 0.3),
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
-                    thumbColor: Colors.white.withValues(alpha: 0.8),
-                    overlayColor: Colors.white.withValues(alpha: 0.05),
-                  ),
-                  child: Slider(
-                    value: _density,
-                    min: 500,
-                    max: 8000,
-                    onChanged: (v) => setState(() => _density = v),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '500',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        fontSize: 11,
-                      ),
-                    ),
-                    Text(
-                      '8000',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 8),
+                _buildSlider(
+                  title: 'Font Size',
+                  valueLabel: '~$_fontSize px',
+                  value: _fontSize,
+                  min: 40,
+                  max: 512,
+                  onChanged: (v) => setState(() => _fontSize = v),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSlider({
+    required String title,
+    required String valueLabel,
+    required double value,
+    void Function(double)? onChanged,
+    required double min,
+    required double max,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              valueLabel,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 4,
+            activeTrackColor: Colors.white.withValues(alpha: 0.3),
+            inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+            thumbColor: Colors.white.withValues(alpha: 0.8),
+            overlayColor: Colors.white.withValues(alpha: 0.05),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '$min',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.25),
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              '$max',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.25),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
