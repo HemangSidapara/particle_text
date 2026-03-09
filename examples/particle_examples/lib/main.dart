@@ -575,7 +575,7 @@ class AutoMorphDemo extends StatefulWidget {
 }
 
 class _AutoMorphDemoState extends State<AutoMorphDemo> {
-  final _words = ['Flutter', 'Dart', 'Kotlin', 'Swift', 'React', 'Rust'];
+  final _words = ['Flutter', 'Dart', 'Particle', 'Provider', 'BLoC', 'Riverpod', 'GetX', 'Kotlin', 'Swift'];
   int _index = 0;
   late Timer _timer;
   bool _paused = false;

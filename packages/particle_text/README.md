@@ -18,7 +18,7 @@ Move your cursor or touch to scatter the particles!
 
 <!--suppress HtmlDeprecatedAttribute -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/HemangSidapara/particle_packages/main/preview/demo.gif" alt="particle_text demo" width="300"/>
+  <img src="https://raw.githubusercontent.com/HemangSidapara/particle_packages/master/preview/text_preview.gif" alt="particle_text demo" width="300"/>
 </p>
 
 ## Features
@@ -125,12 +125,64 @@ Column(
 )
 ```
 
+## ParticleConfig options
+
+| Parameter          | Type         | Default   | Description                                         |
+| ------------------ | ------------ | --------- | --------------------------------------------------- |
+| `particleDensity`  | `double`     | `2000`    | Particles per 100k px² of screen area (auto-scales) |
+| `particleCount`    | `int?`       | `null`    | Fixed count — overrides density when set            |
+| `maxParticleCount` | `int`        | `50000`   | Upper cap for density scaling                       |
+| `minParticleCount` | `int`        | `1000`    | Lower floor for density scaling                     |
+| `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)               |
+| `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                      |
+| `friction`         | `double`     | `0.88`    | Velocity damping (0.8–0.95)                         |
+| `repelForce`       | `double`     | `8.0`     | Pointer repulsion strength (1.0–20.0)               |
+| `backgroundColor`  | `Color`      | `#020308` | Canvas background                                   |
+| `particleColor`    | `Color`      | `#8CAADE` | Particle color at rest                              |
+| `displacedColor`   | `Color`      | `#DCE5FF` | Particle color when scattered                       |
+| `pointerGlowColor` | `Color`      | `#C8D2F0` | Glow orb color                                      |
+| `minParticleSize`  | `double`     | `0.4`     | Min particle radius                                 |
+| `maxParticleSize`  | `double`     | `2.2`     | Max particle radius                                 |
+| `minAlpha`         | `double`     | `0.5`     | Min particle opacity                                |
+| `maxAlpha`         | `double`     | `1.0`     | Max particle opacity                                |
+| `sampleGap`        | `int`        | `2`       | Pixel sampling density (lower = more targets)       |
+| `fontWeight`       | `FontWeight` | `bold`    | Text rendering weight                               |
+| `fontFamily`       | `String?`    | `null`    | Custom font family                                  |
+| `showPointerGlow`  | `bool`       | `true`    | Show pointer glow orb                               |
+| `pointerDotRadius` | `double`     | `4.0`     | Center dot radius                                   |
+
+### Responsive particle count
+
+By default, particle count scales automatically with screen size:
+
+```
+Mobile  (360×800)   → ~5,760 particles
+Tablet  (768×1024)  → ~15,729 particles
+Desktop (1920×1080) → ~41,472 particles
+4K      (3840×2160) → ~50,000 particles (capped)
+```
+
+To force a fixed count (ignores screen size):
+
+```dart
+ParticleConfig(particleCount: 6000)  // always exactly 6000
+```
+
+## Performance
+
+`particle_text` renders all particles in a **single GPU draw call** using `Canvas.drawRawAtlas` (
+powered by `particle_core`). This means 10,000+ particles run smoothly at 60fps.
+
+Key optimizations: pre-allocated typed array buffers (zero GC), squared-distance physics (avoids
+`sqrt`), `ChangeNotifier`-driven repainting (no `setState` / no widget rebuilds), and
+`RepaintBoundary` isolation.
+
 ## Related packages
 
-| Package | Description |
-|---|---|
-| [particle_core](https://pub.dev/packages/particle_core) | Core engine (used internally) |
-| [particle_image](https://pub.dev/packages/particle_image) | Image-to-particle effect |
+| Package                                                   | Description                   |
+| --------------------------------------------------------- | ----------------------------- |
+| [particle_core](https://pub.dev/packages/particle_core)   | Core engine (used internally) |
+| [particle_image](https://pub.dev/packages/particle_image) | Image-to-particle effect      |
 
 ## License
 
