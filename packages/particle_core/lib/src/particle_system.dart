@@ -39,12 +39,19 @@ class _SampleResult {
 ///
 /// Supports both text and image sources.
 class ParticleSystem extends ChangeNotifier {
+  /// Configuration containing layout logic, colors, and physics data.
   final ParticleConfig config;
   final List<Particle> particles = [];
   final Random _rng = Random();
 
+  /// The dimensions of the canvas currently rendering the particles.
   Size screenSize = Size.zero;
+
+  /// High-DPI scale factor for sizing constraints.
   double devicePixelRatio = 1.0;
+
+  /// The current interaction point (mouse hover or touch position).
+  /// Particles will repel away from this point.
   Offset pointer = const Offset(-9999, -9999);
 
   /// Whether particles use per-particle colors (image mode).
@@ -61,6 +68,7 @@ class ParticleSystem extends ChangeNotifier {
   Float32List? _srcRects;
   Int32List? _colors;
 
+  /// Creates a [ParticleSystem] controlled by the given [config].
   ParticleSystem({required this.config});
 
   /// Initialize the sprite texture.
@@ -238,10 +246,13 @@ class ParticleSystem extends ChangeNotifier {
     }
   }
 
+  /// GPU buffer for translation data.
   Float32List? get transforms => _transforms;
 
+  /// GPU buffer for source textures bounds.
   Float32List? get srcRects => _srcRects;
 
+  /// GPU buffer for colors.
   Int32List? get atlasColors => _colors;
 
   /// Spawn particles from sampled pixel targets.

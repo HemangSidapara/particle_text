@@ -150,6 +150,7 @@ class ParticleConfig {
   /// Radius of the bright dot at the pointer center.
   final double pointerDotRadius;
 
+  /// Creates a configuration for particle generation and physics.
   const ParticleConfig({
     this.particleCount,
     this.particleDensity = 10000,
