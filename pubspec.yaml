@@ -42,8 +42,8 @@ melos:
         melos exec --scope="particle_core" -- "dart pub publish --dry-run"
         melos exec --scope="particle_text" -- "dart pub publish --dry-run"
         melos exec --scope="particle_image" -- "dart pub publish --dry-run"
-    publish:
+    publish:force:
       run: |
-        melos exec --scope="particle_core" -- "dart pub publish"
-        melos exec --scope="particle_text" -- "dart pub publish"
-        melos exec --scope="particle_image" -- "dart pub publish"
+        melos exec --scope="particle_core" -- "dart pub publish --force"
+        melos exec --scope="particle_text" -- "dart pub publish --force"
+        melos exec --scope="particle_image" -- "dart pub publish --force"
