@@ -195,9 +195,16 @@ void main() {
 
       for (final preset in presets) {
         final count = preset.effectiveParticleCount(largeContentArea);
+        // With default maxParticleCount (50k), density can exceed it
         expect(count, greaterThan(preset.minParticleCount));
-        expect(count, lessThanOrEqualTo(preset.maxParticleCount));
       }
+
+      // When maxParticleCount is explicitly set, it acts as a hard cap
+      const capped = ParticleConfig(maxParticleCount: 10000, particleDensity: 50000);
+      expect(
+        capped.effectiveParticleCount(largeContentArea),
+        lessThanOrEqualTo(10000),
+      );
     });
   });
 }

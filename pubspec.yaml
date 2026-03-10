@@ -19,17 +19,26 @@ melos:
   command:
     version:
       linkToCommits: true
+    clean:
+      hooks:
+        # Runs "flutter clean" in all Flutter packages (`--flutter`)
+        # with a concurrency of 1 at a time (`--concurrency=1`).
+        post: melos exec --flutter --concurrency=1 -- "flutter clean"
 
   scripts:
+    get:
+      exec: melos bootstrap
     test:
-      exec: flutter test
+      run: melos exec --flutter --concurrency=1 -- "flutter test"
       packageFilters:
         dirExists: test
     publish:dry:
-      exec: dart pub publish --dry-run
-      packageFilters:
-        noPrivate: true
+      run: |
+        melos exec --scope="particle_core" -- "dart pub publish --dry-run"
+        melos exec --scope="particle_text" -- "dart pub publish --dry-run"
+        melos exec --scope="particle_image" -- "dart pub publish --dry-run"
     publish:
-      exec: dart pub publish
-      packageFilters:
-        noPrivate: true
+      run: |
+        melos exec --scope="particle_core" -- "dart pub publish"
+        melos exec --scope="particle_text" -- "dart pub publish"
+        melos exec --scope="particle_image" -- "dart pub publish"

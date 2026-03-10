@@ -1,3 +1,9 @@
+## 0.2.0
+
+* **Dark pixel visibility**: image particles with near-black source colors now have brightness boosted (luminance < 80) while preserving hue and saturation
+* **Max particle count**: density-based count can exceed the default 50k cap; `maxParticleCount` only acts as a hard limit when explicitly set
+* **Monorepo versioning**: all packages now share the same version number
+
 ## 0.0.2
 
 * Repository URL fix

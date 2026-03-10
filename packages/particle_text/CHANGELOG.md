@@ -1,3 +1,10 @@
+## 0.2.0
+
+* **Responsive resize**: particles automatically re-rasterize and reposition when widget size changes (window resize, orientation change)
+* **Max particle count**: density-based count can exceed the default 50k cap; `maxParticleCount` only acts as a hard limit when explicitly set
+* **Monorepo versioning**: all packages now share the same version number
+* Requires `particle_core: ^0.2.0`
+
 ## 0.1.1
 
 * Repository URL fix

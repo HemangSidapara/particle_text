@@ -199,8 +199,28 @@ class ParticleSystem extends ChangeNotifier {
       if (p.targetColor != null) {
         // Image mode: per-particle color with particle alpha
         final tc = p.targetColor!;
+        int r = (tc >> 16) & 0xFF;
+        int g = (tc >> 8) & 0xFF;
+        int b = tc & 0xFF;
+
+        // Ensure dark pixels are visible as particles.
+        // Very dark colors (luminance < minLum) are boosted proportionally
+        // to maintain visibility at small particle sizes while preserving
+        // relative hue and saturation.
+        final luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+        const double minLum = 80;
+        if (luminance < minLum && luminance > 0) {
+          final scale = minLum / luminance;
+          r = (r * scale).round().clamp(0, 255);
+          g = (g * scale).round().clamp(0, 255);
+          b = (b * scale).round().clamp(0, 255);
+        } else if (luminance == 0) {
+          // Pure black — assign a visible neutral gray
+          r = g = b = minLum.toInt();
+        }
+
         final a = (p.alpha * 255).toInt().clamp(0, 255);
-        colors[i] = (a << 24) | (tc & 0x00FFFFFF);
+        colors[i] = (a << 24) | (r << 16) | (g << 8) | b;
       } else {
         // Text mode: lerp config colors based on displacement
         final dxT = p.tx - p.x;

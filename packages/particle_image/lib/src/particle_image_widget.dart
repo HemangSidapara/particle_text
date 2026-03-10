@@ -147,15 +147,15 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
   }
 
   Future<void> _initSystem(Size size, double dpr) async {
-    // Always save size so _loadAsset can use it later
+    final sizeChanged = _lastSize != size;
     _lastSize = size;
     _system.screenSize = size;
     _system.devicePixelRatio = dpr;
 
     final image = widget.image ?? _loadedImage;
     if (image == null) return; // asset still loading
-    if (_initialized) return;
 
+    if (_initialized && !sizeChanged) return;
     _initialized = true;
 
     if (_system.sprite == null) {

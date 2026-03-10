@@ -34,7 +34,7 @@ Move your cursor or touch to scatter the particles!
 
 ```yaml
 dependencies:
-  particle_text: ^0.1.1
+  particle_text: ^0.2.0
 ```
 
 ## Usage
@@ -131,7 +131,7 @@ Column(
 |--------------------|--------------|-----------|-----------------------------------------------------------------------|
 | `particleCount`    | `int?`       | `null`    | Fixed count — strict override, ignores content size                   |
 | `particleDensity`  | `double`     | `10000`   | Particles per 100K px² of text bounding-box area                      |
-| `maxParticleCount` | `int`        | `50000`   | Upper cap for auto-determined count                                   |
+| `maxParticleCount` | `int`        | `50000`   | Hard cap when explicitly set; density can exceed default 50k          |
 | `minParticleCount` | `int`        | `1000`    | Lower floor for density-based count                                   |
 | `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)                                 |
 | `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                                        |
@@ -172,6 +172,12 @@ To force an exact count (ignores content size):
 ```dart
 ParticleConfig(particleCount: 6000)  // always exactly 6000
 ```
+
+> **Max count behavior:** When `maxParticleCount` is left at its default (50,000), density-based counts can exceed it. Set a custom value to enforce a hard cap.
+
+### Responsive resize
+
+`ParticleText` automatically re-rasterizes and repositions particles when the widget size changes (e.g. window resize, orientation change, layout changes). No extra code needed.
 
 ## Performance
 

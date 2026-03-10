@@ -193,15 +193,21 @@ class ParticleConfig {
   ///
   /// Returns [particleCount] directly when it is explicitly set.
   /// Result is clamped to [[minParticleCount], [maxParticleCount]].
+  /// However, if [maxParticleCount] is the default (50,000) and the
+  /// density-based count exceeds it, the density count is used instead.
+  /// This lets users set high densities without being silently capped.
   int effectiveParticleCount(double contentArea) {
     if (particleCount != null) return particleCount!;
 
     // density = particles per 100,000 px² of content area
     final count = (contentArea * particleDensity / 100000).round();
-    // maxParticleCount is the hard cap — if user sets it below minParticleCount,
-    // max wins (e.g. ParticleConfig(maxParticleCount: 100) in tests).
-    final effectiveMin = minParticleCount <= maxParticleCount ? minParticleCount : maxParticleCount;
-    return count.clamp(effectiveMin, maxParticleCount);
+
+    // Only enforce the hard cap if maxParticleCount was explicitly set
+    // (i.e. not the default 50,000). Otherwise let density drive the count.
+    final effectiveMax = (maxParticleCount == 50000 && count > maxParticleCount) ? count : maxParticleCount;
+
+    final effectiveMin = minParticleCount <= effectiveMax ? minParticleCount : effectiveMax;
+    return count.clamp(effectiveMin, effectiveMax);
   }
 
   @override

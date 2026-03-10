@@ -28,6 +28,7 @@ Move your cursor or touch to scatter the particles!
 - **Touch & hover interaction** — particles scatter and reform
 - **Auto background detection** — automatically filters out solid backgrounds
 - **Asset & runtime images** — load from assets or use any `ui.Image`
+- **Dark pixel visibility** — dark image content (logos, text) stays visible as particles
 - **Powered by particle_core** — single GPU draw call, 10,000+ particles at 60fps
 - **Cross-platform** — iOS, Android, Web, macOS, Windows, Linux
 
@@ -35,7 +36,7 @@ Move your cursor or touch to scatter the particles!
 
 ```yaml
 dependencies:
-  particle_image: ^0.0.2
+  particle_image: ^0.2.0
 ```
 
 ## Usage
@@ -84,26 +85,26 @@ For transparent PNGs, only the alpha channel is used (transparent pixels are ski
 
 ## ParticleConfig options
 
-| Parameter          | Type     | Default   | Description                                                      |
-|--------------------|----------|-----------|------------------------------------------------------------------|
-| `particleCount`    | `int?`   | `null`    | Fixed count — strict override                                    |
-| `particleDensity`  | `double` | `10000`   | Particles per 100K px² of drawn image area                       |
-| `maxParticleCount` | `int`    | `50000`   | Upper cap for particle count                                     |
-| `minParticleCount` | `int`    | `1000`    | Lower floor for density-based count                              |
-| `sampleGap`        | `int`    | `2`       | Pixel sampling gap (lower = more target positions)               |
-| `mouseRadius`      | `double` | `80.0`    | Pointer repulsion radius (logical px)                            |
-| `returnSpeed`      | `double` | `0.04`    | Spring return speed (0.01–0.1)                                   |
-| `friction`         | `double` | `0.88`    | Velocity damping (0.8–0.95)                                      |
-| `repelForce`       | `double` | `8.0`     | Pointer repulsion strength (1.0–20.0)                            |
-| `backgroundColor`  | `Color`  | `#020308` | Canvas background                                                |
-| `pointerGlowColor` | `Color`  | `#C8D2F0` | Glow orb color                                                   |
-| `minParticleSize`  | `double` | `0.4`     | Min particle radius                                              |
-| `maxParticleSize`  | `double` | `2.2`     | Max particle radius                                              |
-| `minAlpha`         | `double` | `0.5`     | Min particle opacity                                             |
-| `maxAlpha`         | `double` | `1.0`     | Max particle opacity                                             |
-| `drawBackground`   | `bool`   | `true`    | Draw solid background or transparent/overlay                     |
-| `showPointerGlow`  | `bool`   | `true`    | Show pointer glow orb                                            |
-| `pointerDotRadius` | `double` | `4.0`     | Center dot radius                                                |
+| Parameter          | Type     | Default   | Description                                                  |
+|--------------------|----------|-----------|--------------------------------------------------------------|
+| `particleCount`    | `int?`   | `null`    | Fixed count — strict override                                |
+| `particleDensity`  | `double` | `10000`   | Particles per 100K px² of drawn image area                   |
+| `maxParticleCount` | `int`    | `50000`   | Hard cap when explicitly set; density can exceed default 50k |
+| `minParticleCount` | `int`    | `1000`    | Lower floor for density-based count                          |
+| `sampleGap`        | `int`    | `2`       | Pixel sampling gap (lower = more target positions)           |
+| `mouseRadius`      | `double` | `80.0`    | Pointer repulsion radius (logical px)                        |
+| `returnSpeed`      | `double` | `0.04`    | Spring return speed (0.01–0.1)                               |
+| `friction`         | `double` | `0.88`    | Velocity damping (0.8–0.95)                                  |
+| `repelForce`       | `double` | `8.0`     | Pointer repulsion strength (1.0–20.0)                        |
+| `backgroundColor`  | `Color`  | `#020308` | Canvas background                                            |
+| `pointerGlowColor` | `Color`  | `#C8D2F0` | Glow orb color                                               |
+| `minParticleSize`  | `double` | `0.4`     | Min particle radius                                          |
+| `maxParticleSize`  | `double` | `2.2`     | Max particle radius                                          |
+| `minAlpha`         | `double` | `0.5`     | Min particle opacity                                         |
+| `maxAlpha`         | `double` | `1.0`     | Max particle opacity                                         |
+| `drawBackground`   | `bool`   | `true`    | Draw solid background or transparent/overlay                 |
+| `showPointerGlow`  | `bool`   | `true`    | Show pointer glow orb                                        |
+| `pointerDotRadius` | `double` | `4.0`     | Center dot radius                                            |
 
 > **Note:** `particleColor` and `displacedColor` are ignored in image mode — per-pixel colors from the source image are used instead.
 
@@ -125,7 +126,34 @@ ParticleConfig(sampleGap: 1)       // densest pixel targets
 ParticleConfig(particleDensity: 14000)  // more particles per area
 ```
 
-Capped at `maxParticleCount` (default 50,000) for performance.
+Capped at `maxParticleCount` only when explicitly set. The default 50,000 can be exceeded by density.
+
+### Responsive resize
+
+`ParticleImage` automatically re-rasterizes and repositions particles when the widget size changes (window resize, orientation change). No extra code needed.
+
+### Dark pixel visibility
+
+Image content with very dark or near-black pixels (e.g. dark text in a logo PNG) is automatically brightened to remain visible as particles. Hue and saturation are preserved — only luminance is boosted.
+
+### Background options
+
+```dart
+// Dark background (default)
+ParticleImage.asset('logo.png', config: ParticleConfig())
+
+// Light background
+ParticleImage.asset('logo.png', config: ParticleConfig(
+  backgroundColor: Colors.white,
+  showPointerGlow: false,
+))
+
+// Transparent (overlay on any background)
+ParticleImage.asset('logo.png', config: ParticleConfig(
+  drawBackground: false,
+  backgroundColor: Colors.transparent,
+))
+```
 
 ## Performance
 

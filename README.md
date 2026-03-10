@@ -25,16 +25,16 @@ Users install `particle_text` or `particle_image` (or both). They automatically 
 ```yaml
 # For text effects
 dependencies:
-  particle_text: ^0.1.0
+  particle_text: ^0.2.0
 
 # For image effects
 dependencies:
-  particle_image: ^0.0.1
+  particle_image: ^0.2.0
 
 # For both
 dependencies:
-  particle_text: ^0.1.0
-  particle_image: ^0.0.1
+  particle_text: ^0.2.0
+  particle_image: ^0.2.0
 ```
 
 ## Development

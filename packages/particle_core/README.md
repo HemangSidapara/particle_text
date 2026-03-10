@@ -28,7 +28,7 @@ widgets built on this engine.
 
 ```yaml
 dependencies:
-  particle_core: ^0.0.2
+  particle_core: ^0.2.0
 ```
 
 ## ParticleConfig options
@@ -37,7 +37,7 @@ dependencies:
 |--------------------|--------------|-----------|-----------------------------------------------------------------------|
 | `particleCount`    | `int?`       | `null`    | Fixed count — strict override, ignores content size                   |
 | `particleDensity`  | `double`     | `10000`   | Particles per 100K px² of content area (text bbox / image drawn area) |
-| `maxParticleCount` | `int`        | `50000`   | Upper cap for auto-determined count                                   |
+| `maxParticleCount` | `int`        | `50000`   | Hard cap when explicitly set; density can exceed default 50k          |
 | `minParticleCount` | `int`        | `1000`    | Lower floor for density-based count                                   |
 | `mouseRadius`      | `double`     | `80.0`    | Pointer repulsion radius (logical px)                                 |
 | `returnSpeed`      | `double`     | `0.04`    | Spring return speed (0.01–0.1)                                        |
@@ -86,6 +86,16 @@ count = contentArea × particleDensity / 100,000
 - `fontSize` is **responsive** when null — auto-scales with widget size (32–200 px)
 
 To force an exact count: `ParticleConfig(particleCount: 6000)`
+
+> **Max count behavior:** When `maxParticleCount` is left at its default (50,000), the density-based count is allowed to exceed it. The cap only applies when you explicitly set a custom `maxParticleCount`.
+
+### Responsive resize
+
+Both `ParticleText` and `ParticleImage` detect widget size changes (e.g. window resize, orientation change) and automatically re-rasterize content and reposition particles at the new size.
+
+### Dark image pixel visibility
+
+Image particles with very dark/near-black source colors (luminance < 80) have their brightness automatically boosted while preserving hue and saturation. This ensures logos and text within images remain visible as particles regardless of background color.
 
 ## Performance
 

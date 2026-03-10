@@ -98,8 +98,7 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
   }
 
   Future<void> _initSystem(Size size, double dpr) async {
-    if (_initialized && _lastSize == size) return;
-    _initialized = true;
+    final sizeChanged = _lastSize != size;
     _lastSize = size;
     _system.screenSize = size;
     _system.devicePixelRatio = dpr;
@@ -109,7 +108,10 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
       await _system.init();
     }
 
-    await _system.setText(widget.text, size);
+    if (!_initialized || sizeChanged) {
+      _initialized = true;
+      await _system.setText(widget.text, size);
+    }
   }
 
   @override
