@@ -34,6 +34,7 @@ class ParticleText extends StatefulWidget {
   /// Called when the text changes and particles begin morphing.
   final VoidCallback? onTextChanged;
 
+  /// Creates a [ParticleText] that renders [text] as interactive particles.
   const ParticleText({
     super.key,
     required this.text,

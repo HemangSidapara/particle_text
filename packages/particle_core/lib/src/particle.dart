@@ -19,6 +19,7 @@ class Particle {
   /// When null, uses config-based color interpolation.
   int? targetColor;
 
+  /// Creates a new particle with the given properties.
   Particle({
     required this.x,
     required this.y,

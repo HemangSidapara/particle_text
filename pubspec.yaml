@@ -32,6 +32,11 @@ melos:
       run: melos exec --flutter --concurrency=1 -- "flutter test"
       packageFilters:
         dirExists: test
+    doc:dry:
+      run: |
+        melos exec --scope="particle_core" -- "dart doc --dry-run"
+        melos exec --scope="particle_text" -- "dart doc --dry-run"
+        melos exec --scope="particle_image" -- "dart doc --dry-run"
     publish:dry:
       run: |
         melos exec --scope="particle_core" -- "dart pub publish --dry-run"

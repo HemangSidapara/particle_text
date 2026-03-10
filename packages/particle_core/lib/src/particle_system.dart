@@ -35,7 +35,7 @@ class _SampleResult {
 ///
 /// Uses [ChangeNotifier] to drive [CustomPainter] repaints
 /// without widget tree rebuilds. Renders all particles in a
-/// single GPU draw call via [drawRawAtlas].
+/// single GPU draw call via [Canvas.drawRawAtlas].
 ///
 /// Supports both text and image sources.
 class ParticleSystem extends ChangeNotifier {

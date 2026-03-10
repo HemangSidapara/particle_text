@@ -11,7 +11,10 @@ import 'particle_config.dart';
 /// Supports transparent, light, and dark backgrounds via
 /// [ParticleConfig.drawBackground].
 class ParticlePainter extends CustomPainter {
+  /// The underlying particle physics engine and data store.
   final ParticleSystem system;
+
+  /// The configuration dictating visual appearance and rendering rules.
   final ParticleConfig config;
 
   // Cached paints
@@ -19,6 +22,7 @@ class ParticlePainter extends CustomPainter {
   final Paint _atlasPaint;
   final Paint _dotPaint = Paint();
 
+  /// Creates a [ParticlePainter] that renders the given [system] using [config].
   ParticlePainter({
     required this.system,
     required this.config,

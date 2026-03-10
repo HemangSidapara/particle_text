@@ -34,7 +34,7 @@ class ParticleImage extends StatefulWidget {
   final String? assetPath;
 
   /// Configuration for particle behavior and appearance.
-  /// Note: [particleColor] and [displacedColor] are ignored in image mode;
+  /// Note: [ParticleConfig.particleColor] and [ParticleConfig.displacedColor] are ignored in image mode;
   /// per-pixel colors from the image are used instead.
   final ParticleConfig config;
 
