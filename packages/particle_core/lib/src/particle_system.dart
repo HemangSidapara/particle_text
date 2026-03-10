@@ -41,6 +41,8 @@ class _SampleResult {
 class ParticleSystem extends ChangeNotifier {
   /// Configuration containing layout logic, colors, and physics data.
   final ParticleConfig config;
+
+  /// List of active particles.
   final List<Particle> particles = [];
   final Random _rng = Random();
 
@@ -60,6 +62,7 @@ class ParticleSystem extends ChangeNotifier {
   /// Pre-rendered soft circle texture.
   ui.Image? sprite;
 
+  /// Pre-rendered soft circle texture size.
   static const int spriteSize = 32;
   static const double _spriteHalf = spriteSize / 2.0;
 
