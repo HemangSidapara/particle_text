@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
 /// Example: Building a custom particle widget using particle_core directly.
 class CustomParticleWidget extends StatefulWidget {
   final String text;
+
   const CustomParticleWidget({super.key, required this.text});
 
   @override
@@ -38,7 +39,7 @@ class _CustomParticleWidgetState extends State<CustomParticleWidget> with Single
     super.initState();
     _system = ParticleSystem(config: ParticleConfig.cosmic());
     _painter = ParticlePainter(system: _system, config: ParticleConfig.cosmic());
-    _ticker = createTicker((_) => _system.tick())..start();
+    _ticker = createTicker((_) => _system.tick(pointer: _system.pointer, config: _system.config))..start();
   }
 
   @override

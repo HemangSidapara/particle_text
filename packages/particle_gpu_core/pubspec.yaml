@@ -1,0 +1,27 @@
+name: particle_gpu_core
+description: A high-performance GPGPU-based particle engine for Flutter, capable of rendering 1,000,000+ particles using compute-style fragment shaders.
+version: 0.0.1
+resolution: workspace
+homepage: https://github.com/HemangSidapara/particle_packages
+repository: https://github.com/HemangSidapara/particle_packages/tree/master/packages/particle_gpu_core
+issue_tracker: https://github.com/HemangSidapara/particle_packages/issues
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  vector_math: ^2.2.0
+  particle_core: ^0.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  shaders:
+    - shaders/physics.frag

@@ -77,7 +77,7 @@ void main() {
 
       system.pointer = const Offset(-9999, -9999);
       for (int i = 0; i < 60; i++) {
-        system.tick();
+        system.tick(pointer: system.pointer, config: system.config);
       }
 
       for (int i = 0; i < system.particles.length; i++) {
@@ -85,8 +85,7 @@ void main() {
         final dx = p.tx - p.x;
         final dy = p.ty - p.y;
         final currentDist = dx * dx + dy * dy;
-        expect(currentDist, lessThan(initialDistances[i]),
-            reason: 'Particle $i should be closer to target after tick');
+        expect(currentDist, lessThan(initialDistances[i]), reason: 'Particle $i should be closer to target after tick');
       }
     });
 
@@ -98,7 +97,7 @@ void main() {
 
       system.pointer = const Offset(-9999, -9999);
       for (int i = 0; i < 120; i++) {
-        system.tick();
+        system.tick(pointer: system.pointer, config: system.config);
       }
 
       final p = system.particles.first;
@@ -108,16 +107,13 @@ void main() {
       final beforeY = p.y;
 
       system.pointer = Offset(p.x + 5, p.y + 5);
-      system.tick();
+      system.tick(pointer: system.pointer, config: system.config);
 
-      final displaced = (p.x - beforeX).abs() > 0.001 ||
-          (p.y - beforeY).abs() > 0.001;
-      expect(displaced, isTrue,
-          reason: 'Particle should be repelled by nearby pointer');
+      final displaced = (p.x - beforeX).abs() > 0.001 || (p.y - beforeY).abs() > 0.001;
+      expect(displaced, isTrue, reason: 'Particle should be repelled by nearby pointer');
     });
 
-    test('setText retargets existing particles without changing count',
-        () async {
+    test('setText retargets existing particles without changing count', () async {
       await system.init();
       const size = Size(400, 300);
       system.screenSize = size;
@@ -166,7 +162,7 @@ void main() {
 
       bool notified = false;
       system.addListener(() => notified = true);
-      system.tick();
+      system.tick(pointer: system.pointer, config: system.config);
       expect(notified, isTrue);
     });
   });

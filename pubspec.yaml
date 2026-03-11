@@ -6,6 +6,7 @@ environment:
 
 workspace:
   - packages/particle_core
+  - packages/particle_gpu_core
   - packages/particle_text
   - packages/particle_image
   - examples/particle_examples
@@ -35,15 +36,18 @@ melos:
     doc:dry:
       run: |
         melos exec --scope="particle_core" -- "dart doc --dry-run"
+        melos exec --scope="particle_gpu_core" -- "dart doc --dry-run"
         melos exec --scope="particle_text" -- "dart doc --dry-run"
         melos exec --scope="particle_image" -- "dart doc --dry-run"
     publish:dry:
       run: |
         melos exec --scope="particle_core" -- "dart pub publish --dry-run"
+        melos exec --scope="particle_gpu_core" -- "dart pub publish --dry-run"
         melos exec --scope="particle_text" -- "dart pub publish --dry-run"
         melos exec --scope="particle_image" -- "dart pub publish --dry-run"
     publish:force:
       run: |
         melos exec --scope="particle_core" -- "dart pub publish --force"
+        melos exec --scope="particle_gpu_core" -- "dart pub publish --force"
         melos exec --scope="particle_text" -- "dart pub publish --force"
         melos exec --scope="particle_image" -- "dart pub publish --force"

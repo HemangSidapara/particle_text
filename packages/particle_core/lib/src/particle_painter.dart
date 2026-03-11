@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'particle_system.dart';
-import 'particle_config.dart';
+import 'package:particle_core/particle_core.dart';
 
 /// High-performance particle renderer.
 ///
@@ -12,7 +11,7 @@ import 'particle_config.dart';
 /// [ParticleConfig.drawBackground].
 class ParticlePainter extends CustomPainter {
   /// The underlying particle physics engine and data store.
-  final ParticleSystem system;
+  final IParticleCore system;
 
   /// The configuration dictating visual appearance and rendering rules.
   final ParticleConfig config;

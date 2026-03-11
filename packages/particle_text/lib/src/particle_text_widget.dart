@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:particle_core/particle_core.dart';
+import 'package:particle_gpu_core/particle_gpu_core.dart';
 
 /// An interactive particle text effect widget.
 ///
@@ -49,14 +50,15 @@ class ParticleText extends StatefulWidget {
 
 class _ParticleTextState extends State<ParticleText> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
-  late ParticleSystem _system;
-  late ParticlePainter _painter;
+  late IParticleCore _system;
+  late CustomPainter _painter;
   bool _initialized = false;
   Size _lastSize = Size.zero;
 
   @override
   void initState() {
     super.initState();
+    // Start with Classic by default, will upgrade in _initSystem if needed
     _system = ParticleSystem(config: widget.config);
     _painter = ParticlePainter(system: _system, config: widget.config);
     _ticker = createTicker(_onTick)..start();
@@ -95,18 +97,49 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
   void _onTick(Duration elapsed) {
     // Drives physics → builds render data → notifyListeners → painter repaints
     // NO setState — only the CustomPaint canvas repaints
-    _system.tick();
+    _system.tick(
+      pointer: _system.pointer,
+      config: widget.config,
+    );
   }
 
   Future<void> _initSystem(Size size, double dpr) async {
+    // Determine which engine to use
+    final isGpuCapable = await GPUCapabilityProbe.check();
+    final count = widget.config.particleCount ?? 0;
+    final useGPU = count > 50000 && isGpuCapable;
+    
+    final bool currentIsGpu = _system is ParticleGPUComputeManager;
+    
+    if (useGPU != currentIsGpu) {
+        // Swap engine
+        if (useGPU) {
+            final gpuSystem = ParticleGPUComputeManager(
+                particleCount: widget.config.particleCount ?? 100000,
+                dimension: size,
+                config: widget.config,
+            );
+            _system = gpuSystem;
+            _painter = ParticleGPUPainter(system: gpuSystem, config: widget.config);
+        } else {
+            _system = ParticleSystem(config: widget.config);
+            _painter = ParticlePainter(system: _system, config: widget.config);
+        }
+        _initialized = false;
+        if (mounted) setState(() {});
+    }
+
     final sizeChanged = _lastSize != size;
     _lastSize = size;
-    _system.screenSize = size;
-    _system.devicePixelRatio = dpr;
-
-    // Create sprite texture (once)
-    if (_system.sprite == null) {
-      await _system.init();
+    
+    if (_system is ParticleSystem) {
+        final sys = _system as ParticleSystem;
+        sys.screenSize = size;
+        sys.devicePixelRatio = dpr;
+        if (sys.sprite == null) await sys.init();
+    } else if (_system is ParticleGPUComputeManager) {
+        final sys = _system as ParticleGPUComputeManager;
+        await sys.initialize();
     }
 
     if (!_initialized || sizeChanged) {
@@ -133,7 +166,7 @@ class _ParticleTextState extends State<ParticleText> with SingleTickerProviderSt
             child: MouseRegion(
               onHover: (e) => _system.pointer = e.localPosition,
               onExit: (_) => _system.pointer = const Offset(-9999, -9999),
-              cursor: SystemMouseCursors.none,
+              cursor: SystemMouseCursors.basic,
               child: CustomPaint(
                 size: size,
                 painter: _painter,

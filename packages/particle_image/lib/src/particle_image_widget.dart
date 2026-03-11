@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:particle_core/particle_core.dart';
+import 'package:particle_gpu_core/particle_gpu_core.dart';
 
 /// Renders an image as interactive particles.
 ///
@@ -68,8 +69,8 @@ class ParticleImage extends StatefulWidget {
 
 class _ParticleImageState extends State<ParticleImage> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
-  late ParticleSystem _system;
-  late ParticlePainter _painter;
+  late IParticleCore _system;
+  late CustomPainter _painter;
   bool _initialized = false;
   Size _lastSize = Size.zero;
   ui.Image? _loadedImage;
@@ -143,24 +144,56 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
   }
 
   void _onTick(Duration elapsed) {
-    _system.tick();
+    _system.tick(
+      pointer: _system.pointer,
+      config: widget.config,
+    );
   }
 
   Future<void> _initSystem(Size size, double dpr) async {
+    // Determine which engine to use
+    final isGpuCapable = await GPUCapabilityProbe.check();
+    final count = widget.config.particleCount ?? 0;
+    final useGPU = count > 50000 && isGpuCapable;
+
+    final bool currentIsGpu = _system is ParticleGPUComputeManager;
+
+    if (useGPU != currentIsGpu) {
+      // Swap engine
+      if (useGPU) {
+        final gpuSystem = ParticleGPUComputeManager(
+          particleCount: widget.config.particleCount ?? 100000,
+          dimension: size,
+          config: widget.config,
+        );
+        _system = gpuSystem;
+        _painter = ParticleGPUPainter(system: gpuSystem, config: widget.config);
+      } else {
+        _system = ParticleSystem(config: widget.config);
+        _painter = ParticlePainter(system: _system, config: widget.config);
+      }
+      _initialized = false;
+      if (mounted) setState(() {});
+    }
+
     final sizeChanged = _lastSize != size;
     _lastSize = size;
-    _system.screenSize = size;
-    _system.devicePixelRatio = dpr;
+
+    if (_system is ParticleSystem) {
+      final sys = _system as ParticleSystem;
+      sys.screenSize = size;
+      sys.devicePixelRatio = dpr;
+      if (sys.sprite == null) await sys.init();
+    } else if (_system is ParticleGPUComputeManager) {
+      final sys = _system as ParticleGPUComputeManager;
+      await sys.initialize();
+    }
 
     final image = widget.image ?? _loadedImage;
     if (image == null) return; // asset still loading
 
     if (_initialized && !sizeChanged) return;
     _initialized = true;
-
-    if (_system.sprite == null) {
-      await _system.init();
-    }
 
     await _system.setImage(image, size);
     widget.onImageLoaded?.call();
@@ -184,7 +217,7 @@ class _ParticleImageState extends State<ParticleImage> with SingleTickerProvider
             child: MouseRegion(
               onHover: (e) => _system.pointer = e.localPosition,
               onExit: (_) => _system.pointer = const Offset(-9999, -9999),
-              cursor: SystemMouseCursors.none,
+              cursor: SystemMouseCursors.basic,
               child: CustomPaint(
                 size: size,
                 painter: _painter,

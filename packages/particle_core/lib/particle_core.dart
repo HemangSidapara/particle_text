@@ -8,3 +8,4 @@ export 'src/particle.dart';
 export 'src/particle_config.dart';
 export 'src/particle_system.dart';
 export 'src/particle_painter.dart';
+export 'src/particle_core_interface.dart';

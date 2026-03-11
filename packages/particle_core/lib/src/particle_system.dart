@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'particle.dart';
 import 'particle_config.dart';
+import 'particle_core_interface.dart';
 
 /// Sampled pixel with position and optional color.
 class _PixelSample {
@@ -38,7 +39,7 @@ class _SampleResult {
 /// single GPU draw call via [Canvas.drawRawAtlas].
 ///
 /// Supports both text and image sources.
-class ParticleSystem extends ChangeNotifier {
+class ParticleSystem extends IParticleCore {
   /// Configuration containing layout logic, colors, and physics data.
   final ParticleConfig config;
 
@@ -46,20 +47,19 @@ class ParticleSystem extends ChangeNotifier {
   final List<Particle> particles = [];
   final Random _rng = Random();
 
-  /// The dimensions of the canvas currently rendering the particles.
-  Size screenSize = Size.zero;
+  @override
+  ui.Size screenSize = ui.Size.zero;
 
-  /// High-DPI scale factor for sizing constraints.
+  @override
   double devicePixelRatio = 1.0;
 
-  /// The current interaction point (mouse hover or touch position).
-  /// Particles will repel away from this point.
-  Offset pointer = const Offset(-9999, -9999);
+  @override
+  ui.Offset pointer = const ui.Offset(-9999, -9999);
 
   /// Whether particles use per-particle colors (image mode).
   bool usePerParticleColor = false;
 
-  /// Pre-rendered soft circle texture.
+  @override
   ui.Image? sprite;
 
   /// Pre-rendered soft circle texture size.
@@ -70,6 +70,12 @@ class ParticleSystem extends ChangeNotifier {
   Float32List? _transforms;
   Float32List? _srcRects;
   Int32List? _colors;
+
+  @override
+  Float32List? get transforms => _transforms;
+
+  @override
+  Int32List? get atlasColors => _colors;
 
   /// Creates a [ParticleSystem] controlled by the given [config].
   ParticleSystem({required this.config});
@@ -85,6 +91,7 @@ class ParticleSystem extends ChangeNotifier {
   /// Particle count is calculated from the text bounding-box area
   /// and [ParticleConfig.particleDensity]. A larger [ParticleConfig.fontSize]
   /// produces a bigger bounding box, which automatically yields more particles.
+  @override
   Future<void> setText(String text, Size size) async {
     final result = await _getTextPixels(text, size);
     if (result.samples.isEmpty) return;
@@ -97,6 +104,7 @@ class ParticleSystem extends ChangeNotifier {
   /// The image is scaled to fit within [size] while preserving aspect ratio.
   /// Particle count is calculated from the drawn image area and density.
   /// Always does a full particle reset since image content is entirely different.
+  @override
   Future<void> setImage(ui.Image image, Size size) async {
     final result = await _getImagePixels(image, size);
     if (result.samples.isEmpty) return;
@@ -125,13 +133,17 @@ class ParticleSystem extends ChangeNotifier {
   }
 
   /// Run one physics step + notify painter.
-  void tick() {
-    _updatePhysics();
+  @override
+  void tick({
+    required Offset pointer,
+    required ParticleConfig config,
+  }) {
+    _updatePhysicsWith(pointer, config);
     _buildRenderData();
     notifyListeners();
   }
 
-  void _updatePhysics() {
+  void _updatePhysicsWith(Offset pointer, ParticleConfig config) {
     final px = pointer.dx;
     final py = pointer.dy;
     final mr = config.mouseRadius;
@@ -249,14 +261,8 @@ class ParticleSystem extends ChangeNotifier {
     }
   }
 
-  /// GPU buffer for translation data.
-  Float32List? get transforms => _transforms;
-
-  /// GPU buffer for source textures bounds.
+  @override
   Float32List? get srcRects => _srcRects;
-
-  /// GPU buffer for colors.
-  Int32List? get atlasColors => _colors;
 
   /// Spawn particles from sampled pixel targets.
   ///
