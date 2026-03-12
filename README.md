@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="https://github.com/HemangSidapara/particle_packages/blob/master/resources/banner_2800x800.png?raw=true"
+       alt="particle_text demo: Blue and cyan glowing particles form the word Flutter against a dark starry background. The particles scatter and reform responsively as the cursor moves across them, demonstrating spring physics interactions."
+       width="900"
+       style="border-radius:20px;">
+</p>
+
 # particle_packages
 
 A monorepo of Flutter packages for interactive particle effects.
