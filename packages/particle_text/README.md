@@ -18,7 +18,7 @@ Move your cursor or touch to scatter the particles!
 
 <!--suppress HtmlDeprecatedAttribute -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/HemangSidapara/particle_packages/master/preview/text_preview.gif" alt="particle_text demo" width="600"/>
+  <img src="https://raw.githubusercontent.com/HemangSidapara/particle_packages/master/preview/text_preview.gif" alt="particle_text demo: Blue glowing particles spelling Flutter scatter and reform on a dark background, responding to cursor interaction with spring physics" width="600"/>
 </p>
 
 ## Features
@@ -158,7 +158,7 @@ Column(
 
 Particle count is determined by `particleDensity` × **text bounding-box area**:
 
-```
+```text
 count = textWidth × textHeight × particleDensity / 100,000
 ```
 
