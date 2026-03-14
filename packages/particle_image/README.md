@@ -1,8 +1,7 @@
 <p align="center">
   <img src="../../resources/banner_2800x800.png"
        alt="particle_text demo: Blue and cyan glowing particles form the word Flutter against a dark starry background. The particles scatter and reform responsively as the cursor moves across them, demonstrating spring physics interactions."
-       width="900"
-       style="border-radius:20px;">
+       width="900">
 </p>
 
 # particle_image
